@@ -1,9 +1,9 @@
 {
-	"name": "obsidian-clipper",
-	"version": "1.7.0",
-	"description": "Official web clipper for Obsidian.",
+	"name": "fjg-obsidian-task-clipper",
+	"version": "0.1.0",
+	"description": "FJG Chrome task clipper for Obsidian and FJG Taskboard.",
 	"bin": {
-		"obsidian-clipper": "./dist/cli.cjs"
+		"fjg-obsidian-task-clipper": "./dist/cli.cjs"
 	},
 	"files": [
 		"dist"
@@ -21,7 +21,7 @@
 		"build:chrome": "webpack --env BROWSER=chrome --mode production",
 		"build:firefox": "webpack --env BROWSER=firefox --mode production",
 		"build:safari": "webpack --env BROWSER=safari --mode production",
-		"build": "npm run build:chrome && npm run build:firefox && npm run build:safari",
+		"build": "npm run build:chrome",
 		"build:cli": "node scripts/build-cli.mjs",
 		"build:api": "node scripts/build-api.mjs",
 		"dev": "npm run dev:chrome",

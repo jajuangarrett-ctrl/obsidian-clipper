@@ -39,16 +39,10 @@ module.exports = (env, argv) => {
 	const mainConfig = {
 		mode: argv.mode,
 		entry: {
-			popup: './src/core/popup.ts',
-			settings: './src/core/settings.ts',
-			highlights: './src/core/highlights.ts',
-			'reader-page': './src/core/reader-view.ts',
-			content: './src/content.ts',
+			popup: './src/task-clipper/popup.ts',
+			settings: './src/task-clipper/settings.ts',
 			background: './src/background.ts',
-			style: './src/style.scss',
-			highlighter: './src/highlighter.scss',
-			reader: './src/reader.scss',
-			'reader-script': './src/reader-script.ts'
+			style: './src/task-clipper/style.scss'
 		},
 		output: {
 			path: path.resolve(__dirname, outputDir),
@@ -144,17 +138,9 @@ module.exports = (env, argv) => {
 						to: "manifest.json" 
 					},
 					{ from: "src/popup.html", to: "popup.html" },
-					{ from: "src/side-panel.html", to: "side-panel.html" },
 					{ from: "src/settings.html", to: "settings.html" },
-					{ from: "src/highlights.html", to: "highlights.html" },
-					{ from: "src/reader.html", to: "reader.html" },
 					{ from: "src/icons", to: "icons" },
-					{ from: "node_modules/webextension-polyfill/dist/browser-polyfill.min.js", to: "browser-polyfill.min.js" },
-					{ from: "src/flatten-shadow-dom.js", to: "flatten-shadow-dom.js" },
-					{
-						from: 'src/_locales',
-						to: '_locales'
-					}
+					{ from: "node_modules/webextension-polyfill/dist/browser-polyfill.min.js", to: "browser-polyfill.min.js" }
 				],
 			}),
 			new MiniCssExtractPlugin({
@@ -174,7 +160,7 @@ module.exports = (env, argv) => {
 			...(isProduction ? [
 				new ZipPlugin({
 					path: path.resolve(__dirname, 'builds'),
-					filename: `obsidian-web-clipper-${package.version}-${browserName}.zip`,
+					filename: `fjg-obsidian-task-clipper-${package.version}-${browserName}.zip`,
 				})
 			] : [])
 		]
