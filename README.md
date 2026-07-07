@@ -76,7 +76,7 @@ TaskNotes:
 
 Fallback Obsidian destination:
 
-- Vault name: `FJG Vault`
+- Vault name: `FJG Vault`, or blank to use the currently open Obsidian vault
 - Task page: `08 Tasks/Tasks`
 - Save fallback task lines without opening the note: on
 
