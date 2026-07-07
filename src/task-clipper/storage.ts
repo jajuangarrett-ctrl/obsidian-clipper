@@ -33,7 +33,7 @@ export const DEFAULT_STATUSES: StatusOption[] = [
 ];
 
 export const DEFAULT_SETTINGS: TaskClipperSettings = {
-	vaultName: 'FJG Vault',
+	vaultName: '',
 	destinationFile: '08 Tasks/Tasks',
 	projects: [],
 	tags: ['task'],
@@ -168,5 +168,6 @@ function normalizeBaseUrl(value: string): string {
 
 function normalizeVaultName(value: string | undefined, hasValue: boolean): string {
 	if (!hasValue || value === undefined) return DEFAULT_SETTINGS.vaultName;
-	return String(value).trim();
+	const trimmed = String(value).trim();
+	return trimmed === 'FJG Vault' ? '' : trimmed;
 }

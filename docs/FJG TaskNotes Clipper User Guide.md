@@ -282,11 +282,11 @@ Fallback task lines look like this:
 The fallback path uses the settings under `Fallback Obsidian Destination`, usually:
 
 ```text
-Vault name: FJG Vault
+Vault name: blank
 Task page: 08 Tasks/Tasks
 ```
 
-The vault name must match the vault name that Obsidian knows on that laptop. If Obsidian shows `Vault not found`, open the FJG Vault in Obsidian on that laptop and either set the exact vault name in the extension settings or leave `Vault name` blank so Obsidian uses the currently open vault.
+Leave `Vault name` blank unless you have a specific reason to target a named Obsidian vault. A blank vault name lets Obsidian use the currently open vault. If Obsidian shows `Vault not found`, open the FJG Vault in Obsidian on that laptop and clear `Fallback Obsidian Destination -> Vault name` in the extension settings.
 
 Important limits:
 
@@ -298,7 +298,7 @@ Important limits:
 
 If the popup says TaskNotes is unavailable, confirm Obsidian is open, TaskNotes is enabled, the HTTP API is enabled, the API URL is correct, and the bearer token matches the TaskNotes token.
 
-If Obsidian shows `Vault not found`, the extension is using fallback mode and Obsidian cannot find the fallback vault name. Open the FJG Vault on that laptop, then update `Fallback Obsidian Destination -> Vault name` in the Chrome extension options. Leave the vault name blank if you want Obsidian to use the currently open vault.
+If Obsidian shows `Vault not found`, the extension is using fallback mode and Obsidian cannot find the fallback vault name. Open the FJG Vault on that laptop, then clear `Fallback Obsidian Destination -> Vault name` in the Chrome extension options so Obsidian uses the currently open vault.
 
 If projects or statuses are missing, open settings and click `Sync projects/statuses`. Reopen the popup after saving.
 

@@ -3,7 +3,8 @@ import { DEFAULT_SETTINGS, normalizeSettings } from './storage';
 
 describe('task clipper settings', () => {
 	test('uses the default vault name when no setting is stored', () => {
-		expect(normalizeSettings(undefined).vaultName).toBe(DEFAULT_SETTINGS.vaultName);
+		expect(DEFAULT_SETTINGS.vaultName).toBe('');
+		expect(normalizeSettings(undefined).vaultName).toBe('');
 	});
 
 	test('allows a blank vault name so fallback can use the active Obsidian vault', () => {
@@ -11,7 +12,11 @@ describe('task clipper settings', () => {
 		expect(normalizeSettings({ vaultName: '   ' }).vaultName).toBe('');
 	});
 
+	test('migrates the legacy default vault name to blank', () => {
+		expect(normalizeSettings({ vaultName: 'FJG Vault' }).vaultName).toBe('');
+	});
+
 	test('trims configured vault names', () => {
-		expect(normalizeSettings({ vaultName: '  FJG Vault  ' }).vaultName).toBe('FJG Vault');
+		expect(normalizeSettings({ vaultName: '  Work Vault  ' }).vaultName).toBe('Work Vault');
 	});
 });
