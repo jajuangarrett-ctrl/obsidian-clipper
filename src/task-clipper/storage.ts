@@ -59,6 +59,8 @@ export function cleanProjectName(value: string): string {
 }
 
 export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined): TaskClipperSettings {
+	const source = raw || {};
+	const hasVaultName = Object.prototype.hasOwnProperty.call(source, 'vaultName');
 	const merged = { ...DEFAULT_SETTINGS, ...(raw || {}) };
 	const statuses = normalizeStatuses(merged.statuses);
 	const projects = normalizeProjects(merged.projects);
@@ -69,7 +71,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 	const defaultProject = projects.includes(merged.defaultProject) ? merged.defaultProject : '';
 
 	return {
-		vaultName: String(merged.vaultName || DEFAULT_SETTINGS.vaultName).trim(),
+		vaultName: normalizeVaultName(source.vaultName, hasVaultName),
 		destinationFile: normalizeDestinationFile(merged.destinationFile),
 		projects,
 		tags,
@@ -162,4 +164,9 @@ function normalizeDestinationFile(value: string): string {
 
 function normalizeBaseUrl(value: string): string {
 	return String(value || DEFAULT_SETTINGS.taskboardBaseUrl).trim().replace(/\/+$/, '');
+}
+
+function normalizeVaultName(value: string | undefined, hasValue: boolean): string {
+	if (!hasValue || value === undefined) return DEFAULT_SETTINGS.vaultName;
+	return String(value).trim();
 }
