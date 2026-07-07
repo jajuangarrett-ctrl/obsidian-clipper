@@ -24,6 +24,12 @@ body {
 	line-height: 1.4;
 }
 
+body:not(.settings-page) {
+	width: 390px;
+	min-width: 390px;
+	overflow-x: hidden;
+}
+
 button,
 input,
 select,
@@ -69,6 +75,7 @@ button:disabled {
 
 .task-shell {
 	width: 390px;
+	min-width: 390px;
 	min-height: 560px;
 	display: flex;
 	flex-direction: column;
@@ -334,11 +341,6 @@ pre {
 }
 
 @media (max-width: 640px) {
-	.task-shell {
-		width: 100vw;
-		min-height: 100vh;
-	}
-
 	.two-column,
 	.settings-grid,
 	.status-form {
