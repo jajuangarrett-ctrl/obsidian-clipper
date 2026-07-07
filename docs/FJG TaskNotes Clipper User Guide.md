@@ -88,7 +88,7 @@ To confirm fully:
 8. Click `Create Task`.
 9. Go back to Obsidian and check TaskNotes for the new task.
 
-If the task appears in TaskNotes, the create workflow is working. If statuses appear but the task is not created, the extension can read from TaskNotes but the create request is failing; recheck the API token in both TaskNotes and the Chrome extension options.
+If the task appears in TaskNotes as its own task note, the create workflow is working. If the task is appended as a checkbox inside `08 Tasks/Tasks`, the extension used fallback behavior instead of the TaskNotes API path. Recheck that Obsidian is open on the same laptop, TaskNotes HTTP API is enabled, and the API token matches in both TaskNotes and the Chrome extension options.
 
 ### Using Another Laptop
 
@@ -271,7 +271,7 @@ Practical examples:
 
 ## Fallback Behavior
 
-If TaskNotes is unavailable, the extension can still create a fallback Obsidian task line. This is mainly a backup path.
+If TaskNotes is unavailable, the extension can copy a fallback Obsidian task line. This is mainly a backup path and does not create a TaskNotes task note.
 
 Fallback task lines look like this:
 
@@ -279,18 +279,11 @@ Fallback task lines look like this:
 - [ ] Email Basic Needs team about pantry delivery PJ: Basic Needs #task #DoSoon
 ```
 
-The fallback path uses the settings under `Fallback Obsidian Destination`, usually:
-
-```text
-Vault name: blank
-Task page: 08 Tasks/Tasks
-```
-
-Leave `Vault name` blank unless you have a specific reason to target a named Obsidian vault. A blank vault name lets Obsidian use the currently open vault. If Obsidian shows `Vault not found`, open the FJG Vault in Obsidian on that laptop and clear `Fallback Obsidian Destination -> Vault name` in the extension settings.
+Use `Copy Fallback` only when you intentionally want an inline Obsidian checkbox task that you will paste manually. The expected TaskNotes workflow creates a separate task note whose title is the task title.
 
 Important limits:
 
-- Fallback can create a plain Obsidian task line.
+- Fallback copies a plain Obsidian task line.
 - Fallback does not add updates to existing TaskNotes task notes.
 - `Add Update` requires TaskNotes API access because it edits an existing TaskNotes note.
 
@@ -298,7 +291,7 @@ Important limits:
 
 If the popup says TaskNotes is unavailable, confirm Obsidian is open, TaskNotes is enabled, the HTTP API is enabled, the API URL is correct, and the bearer token matches the TaskNotes token.
 
-If Obsidian shows `Vault not found`, the extension is using fallback mode and Obsidian cannot find the fallback vault name. Open the FJG Vault on that laptop, then clear `Fallback Obsidian Destination -> Vault name` in the Chrome extension options so Obsidian uses the currently open vault.
+If Obsidian shows `Vault not found`, the extension is using an older fallback build or saved fallback settings. Pull the latest plugin update, reload the Chrome extension, open the FJG Vault on that laptop, and clear `Fallback Obsidian Destination -> Vault name` in the Chrome extension options.
 
 If projects or statuses are missing, open settings and click `Sync projects/statuses`. Reopen the popup after saving.
 

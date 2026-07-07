@@ -12,7 +12,7 @@ Detailed usage guide with screenshots: [FJG TaskNotes Clipper User Guide](docs/F
 - Choose TaskNotes status, project, and tags in the popup.
 - Add selected Chrome text as a dated update to an existing active TaskNotes task.
 - Keep `#task` on created tasks.
-- Fall back to appending an inline Obsidian checkbox task when TaskNotes API is unavailable.
+- Copy a fallback inline Obsidian checkbox task when TaskNotes API is unavailable.
 
 Default FJG statuses:
 

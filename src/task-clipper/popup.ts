@@ -230,8 +230,7 @@ async function createTask(): Promise<void> {
 	setNotice('Saving...');
 	try {
 		if (!taskNotesAvailable) {
-			await appendFallbackToObsidian(getFallbackTasks().map((task) => task.line).join('\n'));
-			setNotice('TaskNotes unavailable. Fallback task line sent to Obsidian.');
+			setNotice('TaskNotes API is unavailable. Open Obsidian with TaskNotes running, then try again. Use Copy Fallback only if you want an inline checkbox task instead of a TaskNotes note.', true);
 			return;
 		}
 		await client.createTask(payload);
@@ -298,7 +297,7 @@ async function copyFallbackTasks(): Promise<void> {
 	const tasks = getFallbackTasks();
 	if (!tasks.length) return setNotice('Nothing to copy.', true);
 	await navigator.clipboard.writeText(tasks.map((task) => task.line).join('\n'));
-	setNotice('Fallback task line copied.');
+	setNotice('Fallback task line copied. Paste it manually if you want an inline Obsidian checkbox task.');
 }
 
 async function appendFallbackToObsidian(content: string): Promise<void> {
