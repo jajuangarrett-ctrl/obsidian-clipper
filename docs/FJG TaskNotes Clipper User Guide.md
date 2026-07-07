@@ -90,6 +90,20 @@ To confirm fully:
 
 If the task appears in TaskNotes as its own task note, the create workflow is working. If the task is appended as a checkbox inside `08 Tasks/Tasks`, the extension used fallback behavior instead of the TaskNotes API path. Recheck that Obsidian is open on the same laptop, TaskNotes HTTP API is enabled, and the API token matches in both TaskNotes and the Chrome extension options.
 
+If the popup shows `TaskNotes API is unavailable`, test the local API from Chrome on the same laptop:
+
+```text
+http://localhost:8080/api/health
+```
+
+If that does not load, try:
+
+```text
+http://127.0.0.1:8080/api/health
+```
+
+If `127.0.0.1` works but `localhost` does not, set the extension `API base URL` to `http://127.0.0.1:8080`. If neither URL loads, restart Obsidian, confirm TaskNotes is enabled, and confirm the TaskNotes HTTP API toggle is on.
+
 ### Using Another Laptop
 
 You can use the extension on another laptop, but each laptop needs its own local setup. The current extension talks to TaskNotes through `http://localhost:8080`, so it connects to Obsidian on the same laptop where Chrome is running.
@@ -289,7 +303,7 @@ Important limits:
 
 ## Troubleshooting
 
-If the popup says TaskNotes is unavailable, confirm Obsidian is open, TaskNotes is enabled, the HTTP API is enabled, the API URL is correct, and the bearer token matches the TaskNotes token.
+If the popup says TaskNotes is unavailable, confirm Obsidian is open on the same laptop, TaskNotes is enabled, the HTTP API is enabled, the API URL is correct, and the bearer token matches the TaskNotes token. In Chrome, test `http://localhost:8080/api/health`; if that fails, try `http://127.0.0.1:8080/api/health` and use `http://127.0.0.1:8080` as the extension API base URL if it works.
 
 If Obsidian shows `Vault not found`, the extension is using an older fallback build or saved fallback settings. Pull the latest plugin update, reload the Chrome extension, open the FJG Vault on that laptop, and clear `Fallback Obsidian Destination -> Vault name` in the Chrome extension options.
 

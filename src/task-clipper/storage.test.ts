@@ -19,4 +19,8 @@ describe('task clipper settings', () => {
 	test('trims configured vault names', () => {
 		expect(normalizeSettings({ vaultName: '  Work Vault  ' }).vaultName).toBe('Work Vault');
 	});
+
+	test('keeps the TaskNotes base URL fallback separate from the taskboard URL', () => {
+		expect(normalizeSettings({ taskNotesBaseUrl: '' }).taskNotesBaseUrl).toBe(DEFAULT_SETTINGS.taskNotesBaseUrl);
+	});
 });

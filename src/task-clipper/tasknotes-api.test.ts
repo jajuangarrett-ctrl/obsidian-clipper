@@ -66,6 +66,15 @@ describe('TaskNotes API client', () => {
 		});
 	});
 
+	test('includes the local API URL when TaskNotes cannot be reached', async () => {
+		const fetcher = vi.fn(async () => {
+			throw new TypeError('Failed to fetch');
+		}) as FetchMock;
+		const client = new TaskNotesClient({ taskNotesBaseUrl: 'http://localhost:8080' }, '', fetcher);
+
+		await expect(client.health()).rejects.toThrow('TaskNotes API is unavailable at http://localhost:8080');
+	});
+
 	test('normalizes filter statuses while preserving defaults', () => {
 		const statuses = normalizeFilterStatuses(
 			{ statuses: ['open', { value: 'waiting', label: 'Waiting' }] },

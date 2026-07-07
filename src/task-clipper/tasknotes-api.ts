@@ -96,7 +96,7 @@ export class TaskNotesClient {
 				body: options.body === undefined ? undefined : JSON.stringify(options.body),
 			});
 		} catch {
-			throw new Error('TaskNotes API is unavailable. Confirm Obsidian is running and TaskNotes HTTP API is enabled.');
+			throw new Error(`TaskNotes API is unavailable at ${this.baseUrl}. Confirm Obsidian is running on this laptop, TaskNotes HTTP API is enabled, and the port matches. If localhost fails, try http://127.0.0.1:8080 in the extension settings.`);
 		}
 
 		const text = await response.text();

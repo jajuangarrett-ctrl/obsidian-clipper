@@ -79,9 +79,9 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		defaultStatus,
 		defaultProject,
 		silentOpen: Boolean(merged.silentOpen),
-		taskboardBaseUrl: normalizeBaseUrl(merged.taskboardBaseUrl),
+		taskboardBaseUrl: normalizeBaseUrl(merged.taskboardBaseUrl, DEFAULT_SETTINGS.taskboardBaseUrl),
 		addToTaskboard: Boolean(merged.addToTaskboard),
-		taskNotesBaseUrl: normalizeBaseUrl(merged.taskNotesBaseUrl),
+		taskNotesBaseUrl: normalizeBaseUrl(merged.taskNotesBaseUrl, DEFAULT_SETTINGS.taskNotesBaseUrl),
 	};
 }
 
@@ -162,8 +162,8 @@ function normalizeDestinationFile(value: string): string {
 		.replace(/\.md$/i, '');
 }
 
-function normalizeBaseUrl(value: string): string {
-	return String(value || DEFAULT_SETTINGS.taskboardBaseUrl).trim().replace(/\/+$/, '');
+function normalizeBaseUrl(value: string, fallback: string): string {
+	return String(value || fallback).trim().replace(/\/+$/, '');
 }
 
 function normalizeVaultName(value: string | undefined, hasValue: boolean): string {
