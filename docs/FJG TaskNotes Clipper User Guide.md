@@ -104,6 +104,8 @@ http://127.0.0.1:8080/api/health
 
 If `127.0.0.1` works but `localhost` does not, set the extension `API base URL` to `http://127.0.0.1:8080`. If neither URL loads, restart Obsidian, confirm TaskNotes is enabled, and confirm the TaskNotes HTTP API toggle is on.
 
+If the API test returns `Authentication required`, the TaskNotes HTTP API is running. The remaining issue is the token. Paste the exact TaskNotes API authentication token into the extension `Bearer token` field, without adding the word `Bearer`.
+
 ### Using Another Laptop
 
 You can use the extension on another laptop, but each laptop needs its own local setup. The current extension talks to TaskNotes through `http://localhost:8080`, so it connects to Obsidian on the same laptop where Chrome is running.
@@ -304,6 +306,8 @@ Important limits:
 ## Troubleshooting
 
 If the popup says TaskNotes is unavailable, confirm Obsidian is open on the same laptop, TaskNotes is enabled, the HTTP API is enabled, the API URL is correct, and the bearer token matches the TaskNotes token. In Chrome, test `http://localhost:8080/api/health`; if that fails, try `http://127.0.0.1:8080/api/health` and use `http://127.0.0.1:8080` as the extension API base URL if it works.
+
+If the browser or Terminal returns `Authentication required`, leave the API base URL on the working port and fix only the token. The extension token field should contain the raw token text only, not `Bearer <token>`.
 
 If Obsidian shows `Vault not found`, the extension is using an older fallback build or saved fallback settings. Pull the latest plugin update, reload the Chrome extension, open the FJG Vault on that laptop, and clear `Fallback Obsidian Destination -> Vault name` in the Chrome extension options.
 
