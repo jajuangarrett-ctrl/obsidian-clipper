@@ -29,12 +29,14 @@ async function populateForm(): Promise<void> {
 	(document.getElementById('destination-file') as HTMLInputElement).value = settings.destinationFile;
 	(document.getElementById('silent-open') as HTMLInputElement).checked = settings.silentOpen;
 	renderProjects();
+	renderTags();
 	renderStatuses();
 }
 
 function bindEvents(): void {
 	document.getElementById('save-settings')?.addEventListener('click', saveForm);
 	document.getElementById('project-form')?.addEventListener('submit', addProject);
+	document.getElementById('tag-form')?.addEventListener('submit', addTag);
 	document.getElementById('status-form')?.addEventListener('submit', addStatus);
 	document.getElementById('reset-statuses')?.addEventListener('click', resetStatuses);
 	document.getElementById('test-tasknotes')?.addEventListener('click', testTaskNotes);
@@ -76,6 +78,18 @@ async function addStatus(event: Event): Promise<void> {
 	setNotice('Status added.');
 }
 
+async function addTag(event: Event): Promise<void> {
+	event.preventDefault();
+	const input = document.getElementById('tag-name') as HTMLInputElement;
+	const tag = input.value.trim().replace(/^#/, '');
+	if (!tag) return setNotice('Enter a tag name.', true);
+	settings.tags = [...new Set([...settings.tags, tag])].sort((a, b) => a.localeCompare(b));
+	settings = await saveTaskClipperSettings(settings);
+	input.value = '';
+	renderTags();
+	setNotice('Tag added.');
+}
+
 async function resetStatuses(): Promise<void> {
 	settings.statuses = DEFAULT_STATUSES;
 	settings.defaultStatus = 'Inbox';
@@ -106,6 +120,34 @@ function renderProjects(): void {
 			settings = await saveTaskClipperSettings(settings);
 			renderProjects();
 			setNotice('Project deleted.');
+		});
+		item.append(label, button);
+		list.appendChild(item);
+	}
+}
+
+function renderTags(): void {
+	const list = document.getElementById('tag-list') as HTMLElement;
+	list.textContent = '';
+	if (!settings.tags.length) {
+		list.textContent = 'No tags saved yet.';
+		return;
+	}
+
+	for (const tag of settings.tags) {
+		const item = document.createElement('div');
+		item.className = 'manage-item';
+		const label = document.createElement('span');
+		label.textContent = `#${tag}`;
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.textContent = tag === 'task' ? 'Default' : 'Delete';
+		button.disabled = tag === 'task';
+		button.addEventListener('click', async () => {
+			settings.tags = settings.tags.filter((itemTag) => itemTag !== tag);
+			settings = await saveTaskClipperSettings(settings);
+			renderTags();
+			setNotice('Tag deleted.');
 		});
 		item.append(label, button);
 		list.appendChild(item);
@@ -153,14 +195,19 @@ async function syncTaskNotesOptions(): Promise<void> {
 		const client = await taskNotesClientFromForm();
 		const options = await client.filterOptions();
 		const projects = Array.isArray(options.projects) ? options.projects.map(String) : [];
+		const tags = Array.isArray(options.tags) ? options.tags.map(String) : [];
 		settings.projects = [...new Set([...settings.projects, ...projects.map(cleanProjectName)])]
+			.filter(Boolean)
+			.sort((a, b) => a.localeCompare(b));
+		settings.tags = [...new Set([...settings.tags, ...tags.map((tag) => tag.trim().replace(/^#/, ''))])]
 			.filter(Boolean)
 			.sort((a, b) => a.localeCompare(b));
 		settings.statuses = normalizeFilterStatuses(options, DEFAULT_STATUSES);
 		settings = await saveTaskClipperSettings(settings);
 		renderProjects();
+		renderTags();
 		renderStatuses();
-		setNotice(`Synced ${projects.length} projects and ${settings.statuses.length} statuses.`);
+		setNotice(`Synced ${projects.length} projects, ${tags.length} tags, and ${settings.statuses.length} statuses.`);
 	} catch (error) {
 		setNotice(error instanceof Error ? error.message : String(error), true);
 	}

@@ -9,6 +9,7 @@ export type TaskClipperSettings = {
 	vaultName: string;
 	destinationFile: string;
 	projects: string[];
+	tags: string[];
 	statuses: StatusOption[];
 	defaultStatus: string;
 	defaultProject: string;
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	vaultName: 'FJG Vault',
 	destinationFile: '08 Tasks/Tasks',
 	projects: [],
+	tags: ['task'],
 	statuses: DEFAULT_STATUSES,
 	defaultStatus: 'Inbox',
 	defaultProject: '',
@@ -60,6 +62,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 	const merged = { ...DEFAULT_SETTINGS, ...(raw || {}) };
 	const statuses = normalizeStatuses(merged.statuses);
 	const projects = normalizeProjects(merged.projects);
+	const tags = normalizeTags(merged.tags);
 	const defaultStatus = statuses.some((status) => status.id === merged.defaultStatus)
 		? merged.defaultStatus
 		: statuses[0].id;
@@ -69,6 +72,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		vaultName: String(merged.vaultName || DEFAULT_SETTINGS.vaultName).trim(),
 		destinationFile: normalizeDestinationFile(merged.destinationFile),
 		projects,
+		tags,
 		statuses,
 		defaultStatus,
 		defaultProject,
@@ -136,6 +140,15 @@ function normalizeProjects(projects: string[] | undefined): string[] {
 	const clean = source
 		.map((project) => cleanProjectName(String(project || '')))
 		.filter(Boolean);
+	return [...new Set(clean)].sort((a, b) => a.localeCompare(b));
+}
+
+function normalizeTags(tags: string[] | undefined): string[] {
+	const source = Array.isArray(tags) ? tags : ['task'];
+	const clean = source
+		.map((tag) => String(tag || '').trim().replace(/^#/, ''))
+		.filter(Boolean);
+	if (!clean.includes('task')) clean.unshift('task');
 	return [...new Set(clean)].sort((a, b) => a.localeCompare(b));
 }
 

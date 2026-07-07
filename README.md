@@ -7,7 +7,7 @@ The extension now works with [TaskNotes](https://github.com/callumalpass/tasknot
 ## What It Does
 
 - Create a new TaskNotes task from selected Chrome text.
-- Choose TaskNotes status and project in the popup.
+- Choose TaskNotes status, project, and tags in the popup.
 - Add selected Chrome text as a dated update to an existing active TaskNotes task.
 - Keep `#task` on created tasks.
 - Fall back to appending an inline Obsidian checkbox task when TaskNotes API is unavailable.
@@ -70,7 +70,7 @@ TaskNotes:
 - API base URL: `http://localhost:8080`
 - Bearer token: optional TaskNotes API token
 - Test connection: checks `GET /api/health`
-- Sync projects/statuses: pulls TaskNotes filter options
+- Sync projects/statuses/tags: pulls TaskNotes filter options
 
 Fallback Obsidian destination:
 

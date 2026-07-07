@@ -42,6 +42,7 @@ const taskDetails = document.getElementById('task-details') as HTMLTextAreaEleme
 const statusSelect = document.getElementById('status-select') as HTMLSelectElement;
 const projectSelect = document.getElementById('project-select') as HTMLSelectElement;
 const tagsField = document.getElementById('tags-field') as HTMLInputElement;
+const tagOptions = document.getElementById('tag-options') as HTMLDataListElement;
 const taskSearch = document.getElementById('task-search') as HTMLInputElement;
 const taskSelect = document.getElementById('task-select') as HTMLSelectElement;
 const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
@@ -102,6 +103,7 @@ async function refreshTaskNotesData(): Promise<void> {
 		]);
 		const projects = Array.isArray(options.projects) ? options.projects : [];
 		settings.projects = mergeStrings(settings.projects, projects.map(String));
+		settings.tags = mergeStrings(settings.tags, Array.isArray(options.tags) ? options.tags.map(String) : []);
 		settings.statuses = normalizeFilterStatuses(options, DEFAULT_STATUSES);
 		settings = await saveTaskClipperSettings(settings);
 		activeTasks = tasks;
@@ -154,6 +156,13 @@ function renderSelectors(): void {
 		projectSelect.appendChild(option);
 	}
 	projectSelect.value = settings.defaultProject;
+
+	tagOptions.textContent = '';
+	for (const tag of settings.tags) {
+		const option = document.createElement('option');
+		option.value = tag;
+		tagOptions.appendChild(option);
+	}
 }
 
 function renderTaskOptions(): void {
