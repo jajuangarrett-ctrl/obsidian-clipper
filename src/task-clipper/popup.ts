@@ -1,67 +1,134 @@
 import browser from '../utils/browser-polyfill';
-import { buildTaskLines, BuiltTask } from './format';
 import {
+	appendUpdateLog,
+	buildTaskLines,
+	buildTaskNotePayload,
+	BuiltTask,
+	PageContext,
+} from './format';
+import {
+	DEFAULT_STATUSES,
 	TaskClipperSettings,
-	cleanProjectName,
-	cleanStatusId,
 	loadTaskClipperSettings,
-	loadTaskboardPassword,
+	loadTaskNotesToken,
 	saveTaskClipperSettings,
 } from './storage';
+import {
+	TaskNotesClient,
+	TaskNotesTask,
+	normalizeFilterStatuses,
+} from './tasknotes-api';
 
 const PENDING_CONTEXT_KEY = 'fjgTaskClipperPendingContext';
 const PENDING_MAX_AGE_MS = 5 * 60 * 1000;
-const TASKBOARD_STATUSES = new Set(['Inbox', 'DoFirst', 'DoSoon', 'Delegate', 'Waiting', 'On-Hold']);
 
-type PageContext = {
-	selection: string;
-	title: string;
-	url: string;
-};
+type Mode = 'create' | 'update';
 
 let settings: TaskClipperSettings;
-let pageContext: PageContext = { selection: '', title: '', url: '' };
+let client: TaskNotesClient;
+let pageContext: PageContext = { title: '', url: '' };
+let activeTasks: TaskNotesTask[] = [];
+let taskNotesAvailable = false;
+let mode: Mode = 'create';
 
-const taskText = document.getElementById('task-text') as HTMLTextAreaElement;
+const modeCreate = document.getElementById('mode-create') as HTMLButtonElement;
+const modeUpdate = document.getElementById('mode-update') as HTMLButtonElement;
+const createPanel = document.getElementById('create-panel') as HTMLElement;
+const updatePanel = document.getElementById('update-panel') as HTMLElement;
+const apiStatus = document.getElementById('api-status') as HTMLElement;
+const taskTitle = document.getElementById('task-title') as HTMLInputElement;
+const taskDetails = document.getElementById('task-details') as HTMLTextAreaElement;
 const statusSelect = document.getElementById('status-select') as HTMLSelectElement;
 const projectSelect = document.getElementById('project-select') as HTMLSelectElement;
+const tagsField = document.getElementById('tags-field') as HTMLInputElement;
+const taskSearch = document.getElementById('task-search') as HTMLInputElement;
+const taskSelect = document.getElementById('task-select') as HTMLSelectElement;
+const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
+const includeSource = document.getElementById('include-source') as HTMLInputElement;
 const preview = document.getElementById('task-preview') as HTMLElement;
 const taskCount = document.getElementById('task-count') as HTMLElement;
 const notice = document.getElementById('notice') as HTMLElement;
+const saveButton = document.getElementById('save-task') as HTMLButtonElement;
 
 document.addEventListener('DOMContentLoaded', init);
 
 async function init(): Promise<void> {
 	settings = await loadTaskClipperSettings();
-	pageContext = await getInitialPageContext();
+	client = new TaskNotesClient(settings, await loadTaskNotesToken());
+	const initial = await getInitialPageContext();
+	pageContext = { title: initial.title, url: initial.url };
+
+	taskDetails.value = initial.selection || initial.title || '';
+	updateText.value = initial.selection || '';
+	taskTitle.value = firstLine(initial.selection) || initial.title || '';
+	tagsField.value = 'task';
 
 	renderSelectors();
-	taskText.value = pageContext.selection || pageContext.title || '';
-	statusSelect.value = settings.defaultStatus;
-	projectSelect.value = settings.defaultProject;
+	bindEvents();
+	renderMode();
+	renderPreview();
+	await refreshTaskNotesData();
+	taskTitle.focus();
+}
 
-	taskText.addEventListener('input', renderPreview);
-	statusSelect.addEventListener('change', () => {
-		settings.defaultStatus = statusSelect.value;
-		saveTaskClipperSettings(settings).catch(console.error);
-		renderPreview();
-	});
-	projectSelect.addEventListener('change', () => {
-		settings.defaultProject = projectSelect.value;
-		saveTaskClipperSettings(settings).catch(console.error);
-		renderPreview();
-	});
-
+function bindEvents(): void {
+	modeCreate.addEventListener('click', () => setMode('create'));
+	modeUpdate.addEventListener('click', () => setMode('update'));
 	document.getElementById('open-settings')?.addEventListener('click', () => {
 		browser.runtime.openOptionsPage();
 	});
-	document.getElementById('add-project')?.addEventListener('click', addProjectFromPopup);
-	document.getElementById('add-status')?.addEventListener('click', addStatusFromPopup);
-	document.getElementById('copy-task')?.addEventListener('click', copyTasks);
-	document.getElementById('save-task')?.addEventListener('click', saveTasks);
+	document.getElementById('refresh-tasks')?.addEventListener('click', () => refreshTaskNotesData());
+	document.getElementById('copy-task')?.addEventListener('click', copyFallbackTasks);
+	saveButton.addEventListener('click', saveCurrentMode);
 
+	for (const element of [taskTitle, taskDetails, statusSelect, projectSelect, tagsField, taskSearch, taskSelect, updateText, includeSource]) {
+		element.addEventListener('input', () => {
+			if (element === taskSearch) renderTaskOptions();
+			renderPreview();
+		});
+		element.addEventListener('change', renderPreview);
+	}
+}
+
+async function refreshTaskNotesData(): Promise<void> {
+	apiStatus.textContent = 'Checking TaskNotes API...';
+	apiStatus.classList.remove('is-error');
+	try {
+		await client.health();
+		const [options, tasks] = await Promise.all([
+			client.filterOptions().catch(() => ({})),
+			client.queryActiveTasks(),
+		]);
+		const projects = Array.isArray(options.projects) ? options.projects : [];
+		settings.projects = mergeStrings(settings.projects, projects.map(String));
+		settings.statuses = normalizeFilterStatuses(options, DEFAULT_STATUSES);
+		settings = await saveTaskClipperSettings(settings);
+		activeTasks = tasks;
+		taskNotesAvailable = true;
+		renderSelectors();
+		renderTaskOptions();
+		apiStatus.textContent = `Connected to TaskNotes. ${tasks.length} active tasks loaded.`;
+	} catch (error) {
+		taskNotesAvailable = false;
+		apiStatus.textContent = error instanceof Error ? error.message : String(error);
+		apiStatus.classList.add('is-error');
+		renderTaskOptions();
+	}
 	renderPreview();
-	taskText.focus();
+}
+
+function setMode(nextMode: Mode): void {
+	mode = nextMode;
+	renderMode();
+	renderPreview();
+}
+
+function renderMode(): void {
+	modeCreate.classList.toggle('active', mode === 'create');
+	modeUpdate.classList.toggle('active', mode === 'update');
+	createPanel.classList.toggle('is-hidden', mode !== 'create');
+	updatePanel.classList.toggle('is-hidden', mode !== 'update');
+	saveButton.textContent = mode === 'create' ? 'Create Task' : 'Add Update';
 }
 
 function renderSelectors(): void {
@@ -69,9 +136,10 @@ function renderSelectors(): void {
 	for (const status of settings.statuses) {
 		const option = document.createElement('option');
 		option.value = status.id;
-		option.textContent = `${status.label} (#${status.id})`;
+		option.textContent = `${status.label} (${status.id})`;
 		statusSelect.appendChild(option);
 	}
+	statusSelect.value = settings.defaultStatus;
 
 	projectSelect.textContent = '';
 	const empty = document.createElement('option');
@@ -84,80 +152,147 @@ function renderSelectors(): void {
 		option.textContent = project;
 		projectSelect.appendChild(option);
 	}
+	projectSelect.value = settings.defaultProject;
 }
 
-function getBuiltTasks(): BuiltTask[] {
-	return buildTaskLines(
-		taskText.value,
-		statusSelect.value,
-		projectSelect.value,
-		settings.statuses,
-	);
+function renderTaskOptions(): void {
+	const query = taskSearch.value.trim().toLowerCase();
+	const filtered = activeTasks.filter((task) => {
+		const text = `${task.title || ''} ${task.status || ''} ${(task.projects || []).join(' ')}`.toLowerCase();
+		return !query || text.includes(query);
+	});
+	const current = taskSelect.value;
+	taskSelect.textContent = '';
+	if (!filtered.length) {
+		const option = document.createElement('option');
+		option.value = '';
+		option.textContent = taskNotesAvailable ? 'No matching active tasks' : 'TaskNotes unavailable';
+		taskSelect.appendChild(option);
+		return;
+	}
+	for (const task of filtered) {
+		const option = document.createElement('option');
+		option.value = task.id || task.path || task.title;
+		option.textContent = taskLabel(task);
+		taskSelect.appendChild(option);
+	}
+	if (filtered.some((task) => (task.id || task.path || task.title) === current)) {
+		taskSelect.value = current;
+	}
 }
 
 function renderPreview(): void {
-	const tasks = getBuiltTasks();
-	preview.textContent = tasks.length ? tasks.map((task) => task.line).join('\n') : 'No task text yet.';
-	taskCount.textContent = `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}`;
+	if (mode === 'create') {
+		const payload = getCreatePayload();
+		preview.textContent = [
+			`Title: ${payload.title}`,
+			`Status: ${payload.status || 'Inbox'}`,
+			payload.projects?.length ? `Project: ${payload.projects.join(', ')}` : 'Project: none',
+			`Tags: ${(payload.tags || []).join(', ')}`,
+			'',
+			payload.details || '(no details)',
+		].join('\n');
+		taskCount.textContent = taskNotesAvailable ? 'TaskNotes create' : 'Fallback task line';
+		return;
+	}
+
+	const target = activeTasks.find((task) => (task.id || task.path || task.title) === taskSelect.value);
+	preview.textContent = [
+		target ? `Task: ${target.title}` : 'Task: none selected',
+		'',
+		appendUpdateLog('', updateText.value, sourceContext(), new Date()),
+	].join('\n');
+	taskCount.textContent = 'TaskNotes update';
 }
 
-async function addProjectFromPopup(): Promise<void> {
-	const input = document.getElementById('new-project') as HTMLInputElement;
-	const project = cleanProjectName(input.value);
-	if (!project) return setNotice('Enter a project name.', true);
-	settings.projects = [...new Set([...settings.projects, project])].sort((a, b) => a.localeCompare(b));
-	settings.defaultProject = project;
-	settings = await saveTaskClipperSettings(settings);
-	input.value = '';
-	renderSelectors();
-	projectSelect.value = project;
-	renderPreview();
-	setNotice('Project added.');
+async function saveCurrentMode(): Promise<void> {
+	if (mode === 'create') {
+		await createTask();
+	} else {
+		await addUpdate();
+	}
 }
 
-async function addStatusFromPopup(): Promise<void> {
-	const labelInput = document.getElementById('new-status-label') as HTMLInputElement;
-	const idInput = document.getElementById('new-status-id') as HTMLInputElement;
-	const label = labelInput.value.trim();
-	const id = cleanStatusId(idInput.value || label);
-	if (!label || !id) return setNotice('Enter a status label and hashtag.', true);
-	if (settings.statuses.some((status) => status.id === id)) return setNotice('That status already exists.', true);
-	settings.statuses = [...settings.statuses, { id, label }];
-	settings.defaultStatus = id;
-	settings = await saveTaskClipperSettings(settings);
-	labelInput.value = '';
-	idInput.value = '';
-	renderSelectors();
-	statusSelect.value = id;
-	renderPreview();
-	setNotice('Status added.');
-}
-
-async function copyTasks(): Promise<void> {
-	const tasks = getBuiltTasks();
-	if (!tasks.length) return setNotice('Nothing to copy.', true);
-	await navigator.clipboard.writeText(tasks.map((task) => task.line).join('\n'));
-	setNotice('Copied.');
-}
-
-async function saveTasks(): Promise<void> {
-	const tasks = getBuiltTasks();
-	if (!tasks.length) return setNotice('Add task text first.', true);
+async function createTask(): Promise<void> {
+	const payload = getCreatePayload();
+	if (!payload.title.trim()) return setNotice('Add a task title first.', true);
 
 	setNotice('Saving...');
 	try {
-		if (settings.addToTaskboard) {
-			await saveToTaskboard(tasks);
+		if (!taskNotesAvailable) {
+			await appendFallbackToObsidian(getFallbackTasks().map((task) => task.line).join('\n'));
+			setNotice('TaskNotes unavailable. Fallback task line sent to Obsidian.');
+			return;
 		}
-		await appendToObsidian(tasks.map((task) => task.line).join('\n'));
-		setNotice(`${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} sent to Obsidian.`);
+		await client.createTask(payload);
+		setNotice('Task created in TaskNotes.');
+		await refreshTaskNotesData();
 		setTimeout(() => window.close(), 700);
 	} catch (error) {
 		setNotice(error instanceof Error ? error.message : String(error), true);
 	}
 }
 
-async function appendToObsidian(content: string): Promise<void> {
+async function addUpdate(): Promise<void> {
+	const taskId = taskSelect.value;
+	const text = updateText.value.trim();
+	if (!taskId) return setNotice('Choose an active task first.', true);
+	if (!text) return setNotice('Add update text first.', true);
+	if (!taskNotesAvailable) return setNotice('TaskNotes API is required to add updates.', true);
+
+	setNotice('Saving update...');
+	try {
+		const task = await client.getTask(taskId);
+		const details = appendUpdateLog(task.details, text, sourceContext());
+		await client.updateTask(taskId, { details });
+		setNotice('Update added to TaskNotes task.');
+		setTimeout(() => window.close(), 700);
+	} catch (error) {
+		setNotice(error instanceof Error ? error.message : String(error), true);
+	}
+}
+
+function getCreatePayload(): {
+	title: string;
+	details: string;
+	status: string;
+	projects: string[];
+	tags: string[];
+} {
+	const built = buildTaskNotePayload(
+		taskDetails.value || taskTitle.value,
+		statusSelect.value,
+		projectSelect.value,
+		settings.statuses,
+		sourceContext(),
+	);
+	return {
+		title: taskTitle.value.trim() || built.title,
+		details: built.details,
+		status: statusSelect.value || 'Inbox',
+		projects: projectSelect.value ? [projectSelect.value] : [],
+		tags: normalizeTags(tagsField.value),
+	};
+}
+
+function getFallbackTasks(): BuiltTask[] {
+	return buildTaskLines(
+		taskTitle.value || taskDetails.value,
+		statusSelect.value,
+		projectSelect.value,
+		settings.statuses,
+	);
+}
+
+async function copyFallbackTasks(): Promise<void> {
+	const tasks = getFallbackTasks();
+	if (!tasks.length) return setNotice('Nothing to copy.', true);
+	await navigator.clipboard.writeText(tasks.map((task) => task.line).join('\n'));
+	setNotice('Fallback task line copied.');
+}
+
+async function appendFallbackToObsidian(content: string): Promise<void> {
+	if (!content.trim()) throw new Error('Nothing to save.');
 	const body = `\n${content}\n`;
 	await navigator.clipboard.writeText(body);
 
@@ -180,32 +315,44 @@ async function appendToObsidian(content: string): Promise<void> {
 	}
 }
 
-async function saveToTaskboard(tasks: BuiltTask[]): Promise<void> {
-	const password = await loadTaskboardPassword();
-	if (!password) throw new Error('Taskboard password is not configured.');
-
-	const apiTasks = tasks.map((task) => ({
-		title: task.title,
-		bucket: TASKBOARD_STATUSES.has(task.status) ? task.status : 'Inbox',
-		project: task.project || null,
-	}));
-
-	const response = await fetch(`${settings.taskboardBaseUrl}/api/mutate`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-Dashboard-Password': password,
-		},
-		body: JSON.stringify({ action: 'addMany', tasks: apiTasks }),
-	});
-
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(text || `Taskboard save failed with HTTP ${response.status}.`);
-	}
+function sourceContext(): PageContext {
+	return includeSource.checked ? pageContext : { title: '', url: '' };
 }
 
-async function getInitialPageContext(): Promise<PageContext> {
+function normalizeTags(value: string): string[] {
+	const tags = value
+		.split(/[,\s]+/)
+		.map((tag) => tag.trim().replace(/^#/, ''))
+		.filter(Boolean);
+	if (!tags.includes('task')) tags.unshift('task');
+	return [...new Set(tags)];
+}
+
+function taskLabel(task: TaskNotesTask): string {
+	const parts = [
+		task.title || task.id || task.path || 'Untitled task',
+		task.status ? `[${task.status}]` : '',
+		task.projects?.length ? `- ${task.projects.join(', ')}` : '',
+	].filter(Boolean);
+	return parts.join(' ');
+}
+
+function firstLine(value: string): string {
+	return value
+		.replace(/\r\n/g, '\n')
+		.split('\n')
+		.map((line) => line.trim())
+		.find(Boolean) || '';
+}
+
+function mergeStrings(a: string[], b: string[]): string[] {
+	return [...new Set([...a, ...b].map((item) => item.trim()).filter(Boolean))]
+		.sort((left, right) => left.localeCompare(right));
+}
+
+type InitialPageContext = PageContext & { selection: string };
+
+async function getInitialPageContext(): Promise<InitialPageContext> {
 	const pending = await takePendingContext();
 	const active = await readActivePageContext();
 	return {
@@ -215,8 +362,8 @@ async function getInitialPageContext(): Promise<PageContext> {
 	};
 }
 
-async function takePendingContext(): Promise<PageContext> {
-	const result = await browser.storage.local.get(PENDING_CONTEXT_KEY) as Record<string, (PageContext & { createdAt?: number }) | undefined>;
+async function takePendingContext(): Promise<InitialPageContext> {
+	const result = await browser.storage.local.get(PENDING_CONTEXT_KEY) as Record<string, (InitialPageContext & { createdAt?: number }) | undefined>;
 	await browser.storage.local.remove(PENDING_CONTEXT_KEY);
 	const pending = result[PENDING_CONTEXT_KEY];
 	if (!pending || !pending.createdAt || Date.now() - pending.createdAt > PENDING_MAX_AGE_MS) {
@@ -229,7 +376,7 @@ async function takePendingContext(): Promise<PageContext> {
 	};
 }
 
-async function readActivePageContext(): Promise<PageContext> {
+async function readActivePageContext(): Promise<InitialPageContext> {
 	const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 	const tab = tabs[0];
 	if (!tab?.id) return { selection: '', title: '', url: '' };
@@ -243,7 +390,7 @@ async function readActivePageContext(): Promise<PageContext> {
 				url: location.href || '',
 			}),
 		});
-		const result = results[0]?.result as PageContext | undefined;
+		const result = results[0]?.result as InitialPageContext | undefined;
 		return {
 			selection: result?.selection || '',
 			title: result?.title || tab.title || '',
