@@ -70,6 +70,22 @@ These steps happen in Chrome, in the FJG TaskNotes Clipper extension options pag
 
 The fallback destination is only used when TaskNotes is unavailable. The normal path is to create or update TaskNotes task notes through the API.
 
+### Using Another Laptop
+
+You can use the extension on another laptop, but each laptop needs its own local setup. The current extension talks to TaskNotes through `http://localhost:8080`, so it connects to Obsidian on the same laptop where Chrome is running.
+
+For each laptop you want to use:
+
+1. Install or load the Chrome extension on that laptop.
+2. Install Obsidian on that laptop.
+3. Open the synced `FJG Vault` on that laptop.
+4. Install and enable TaskNotes in that Obsidian vault.
+5. Enable the TaskNotes HTTP API on that laptop.
+6. Paste the TaskNotes API token into the FJG TaskNotes Clipper extension options on that laptop.
+7. Run `Test connection` and `Sync projects/statuses`.
+
+Chrome may sync some extension settings, but do not assume the API token or unpacked development extension will sync. Treat the token and extension install as per-device setup.
+
 ## Managing Projects, Tags, and Statuses
 
 Use the settings page to keep the clipper aligned with your TaskNotes setup.
