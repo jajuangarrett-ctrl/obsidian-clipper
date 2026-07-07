@@ -13,6 +13,7 @@ Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User
 - Creates one Markdown note per task in `TaskNotes/Tasks/`.
 - Appends a linked checkbox item to `08 Tasks/Tasks.md` as a lightweight index.
 - Adds selected Chrome text as an update under `## Updates` in an existing task note.
+- Uses clean task-title filenames, adding ` - 2`, ` - 3`, and so on only for duplicates.
 - Keeps every task compatible with Obsidian task plugins by including `#task`.
 - Uses status tags such as `#Inbox`, `#DoFirst`, and `#Waiting`.
 
@@ -122,6 +123,8 @@ Add an update:
 2. Right-click and choose `Add selection as task update`, or open the extension and choose `Add Update`.
 3. Type enough of the task title or task note filename to identify one task.
 4. Click `Add Update`.
+
+If Chrome asks whether to open Obsidian, allow it. The extension uses an `obsidian://` URL to hand the task payload to the bridge plugin.
 
 ## Verification
 

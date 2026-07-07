@@ -60,7 +60,15 @@ Source: [Budget page](https://example.com/budget)
 Example index line:
 
 ```md
-- [ ] [[TaskNotes/Tasks/20260707060500 Review the budget packet|Review the budget packet]] PJ: Basic Needs #task #DoSoon
+- [ ] [[TaskNotes/Tasks/Review the budget packet|Review the budget packet]] PJ: Basic Needs #task #DoSoon
+```
+
+If a note with the same title already exists, the bridge creates the next available filename with a numeric suffix:
+
+```text
+Review the budget packet.md
+Review the budget packet - 2.md
+Review the budget packet - 3.md
 ```
 
 ## Files Involved
@@ -239,6 +247,8 @@ You can add optional tags in extension `Options`. In the popup, the `Tags` field
 
 Obsidian should open or come forward. A dedicated task note should be created in `TaskNotes/Tasks`, and a linked checkbox should be appended to `08 Tasks/Tasks.md`.
 
+If Chrome asks whether to open Obsidian, choose `Open Obsidian`. That permission prompt is Chrome's external-app safety check for the `obsidian://` handoff.
+
 ## Add An Update
 
 Use `Add Update` when the task already exists and selected web text should become a dated update inside that task note.
@@ -299,6 +309,7 @@ If nothing happens after clicking `Create Task` or `Add Update`:
 3. Confirm `FJG Task Clipper Bridge` is enabled in Obsidian.
 4. Restart Obsidian once.
 5. Reload the unpacked Chrome extension from `chrome://extensions`.
+6. If Chrome opens an `obsidian://` tab or prompt, allow it to open Obsidian.
 
 If Obsidian opens but no task note appears:
 

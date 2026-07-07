@@ -78,7 +78,7 @@ module.exports = class FjgTaskClipperBridgePlugin extends Plugin {
     const tags = normalizeTags(payload.tags || ["task"], status);
     const createdAt = safeIsoDate(payload.createdAt);
     const folder = normalizeFolderPath(payload.taskFolder || this.settings.taskFolder);
-    const path = await uniqueTaskNotePath(this.app, folder, title, createdAt);
+    const path = await uniqueTaskNotePath(this.app, folder, title);
     const content = buildTaskNoteMarkdown({
       title,
       details: String(payload.details || "").trim(),
@@ -296,14 +296,13 @@ async function findTaskNote(app, folder, query) {
   throw new Error(`Multiple task notes matched "${query}": ${examples}. Type more of the title.`);
 }
 
-async function uniqueTaskNotePath(app, folder, title, createdAt) {
-  const stamp = formatFileTimestamp(new Date(createdAt));
-  const base = sanitizeFileName(`${stamp} ${title}`) || `${stamp} Clipped task`;
+async function uniqueTaskNotePath(app, folder, title) {
+  const base = sanitizeFileName(title) || "Clipped task";
   let path = `${folder}/${base}.md`;
   let index = 2;
 
   while (app.vault.getAbstractFileByPath(path)) {
-    path = `${folder}/${base} ${index}.md`;
+    path = `${folder}/${base} - ${index}.md`;
     index += 1;
   }
 
@@ -445,16 +444,6 @@ function formatLocalDateTime(date) {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
-function formatFileTimestamp(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
 function sanitizeFileName(value) {
