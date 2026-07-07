@@ -17,16 +17,29 @@ If you are clipping from the always-on Mac, run Obsidian there. If you are clipp
 
 ![TaskNotes API and fallback settings](screenshots/tasknotes-settings.png)
 
+### A. TaskNotes Setup in Obsidian
+
+These steps happen inside Obsidian, in the TaskNotes plugin settings.
+
 1. In Obsidian, install and enable TaskNotes.
 2. Open `Settings -> TaskNotes -> Integrations -> HTTP API`.
 3. Enable the HTTP API.
 4. Keep the default TaskNotes API port unless you intentionally changed it.
-5. In Chrome, right-click the FJG TaskNotes Clipper extension and open `Options`.
-6. Set `API base URL` to `http://localhost:8080`, or use the port configured in TaskNotes on the Mac where Chrome is running.
-7. If TaskNotes uses an API token, paste it into `Bearer token`.
-8. Click `Test connection`.
-9. Click `Sync projects/statuses` to pull your TaskNotes projects, statuses, and tags into the clipper.
-10. Confirm the fallback destination points to your vault and fallback task page, then click `Save settings`.
+5. If TaskNotes asks for an API token, create or paste the token there.
+
+TaskNotes will not show `Test connection`, `Sync projects/statuses`, or `Save settings` for this clipper. Those controls belong to the Chrome extension settings in the next section.
+
+### B. FJG TaskNotes Clipper Setup in Chrome
+
+These steps happen in Chrome, in the FJG TaskNotes Clipper extension options page.
+
+1. In Chrome, right-click the FJG TaskNotes Clipper extension and open `Options`.
+2. If you do not see `Options`, open `chrome://extensions`, choose `FJG TaskNotes Clipper`, then open the extension options/details page.
+3. Set `API base URL` to `http://localhost:8080`, or use the port configured in TaskNotes on the Mac where Chrome is running.
+4. Paste the same TaskNotes API token into `Bearer token`.
+5. Click `Test connection`.
+6. Click `Sync projects/statuses` to pull your TaskNotes projects, statuses, and tags into the clipper.
+7. Confirm the fallback destination points to your vault and fallback task page, then click `Save settings`.
 
 The fallback destination is only used when TaskNotes is unavailable. The normal path is to create or update TaskNotes task notes through the API.
 
