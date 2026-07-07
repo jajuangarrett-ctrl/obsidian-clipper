@@ -52,7 +52,9 @@ These steps happen inside Obsidian, in the TaskNotes plugin settings.
 2. Open `Settings -> TaskNotes -> Integrations -> HTTP API`.
 3. Enable the HTTP API.
 4. Keep the default TaskNotes API port unless you intentionally changed it.
-5. If TaskNotes asks for an API token, create or paste the token there.
+5. In `API authentication token`, enter a TaskNotes-only token. This can be any strong local secret you choose, such as a long password from your password manager.
+
+Do not use an OpenAI API key, GitHub token, Obsidian Sync password, or any other service credential in the TaskNotes API token field. This token is only used so the Chrome extension can authenticate with TaskNotes on your local machine.
 
 TaskNotes will not show `Test connection`, `Sync projects/statuses`, or `Save settings` for this clipper. Those controls belong to the Chrome extension settings in the next section.
 
@@ -63,7 +65,7 @@ These steps happen in Chrome, in the FJG TaskNotes Clipper extension options pag
 1. In Chrome, right-click the FJG TaskNotes Clipper extension and open `Options`.
 2. If you do not see `Options`, open `chrome://extensions`, choose `FJG TaskNotes Clipper`, then open the extension options/details page.
 3. Set `API base URL` to `http://localhost:8080`, or use the port configured in TaskNotes on the Mac where Chrome is running.
-4. Paste the same TaskNotes API token into `Bearer token`.
+4. Paste the same TaskNotes-only API token into `Bearer token`.
 5. Click `Test connection`.
 6. Click `Sync projects/statuses` to pull your TaskNotes projects, statuses, and tags into the clipper.
 7. Confirm the fallback destination points to your vault and fallback task page, then click `Save settings`.
