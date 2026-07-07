@@ -72,6 +72,24 @@ These steps happen in Chrome, in the FJG TaskNotes Clipper extension options pag
 
 The fallback destination is only used when TaskNotes is unavailable. The normal path is to create or update TaskNotes task notes through the API.
 
+### Confirm Setup Worked
+
+Seeing your TaskNotes statuses in the Chrome extension is a strong sign that the setup worked, because the extension had to connect to TaskNotes to pull those values.
+
+To confirm fully:
+
+1. Keep Obsidian open on the same laptop.
+2. Open any web page in Chrome.
+3. Highlight a short piece of text.
+4. Click the FJG TaskNotes Clipper extension icon.
+5. Choose `Create Task`.
+6. Set the title to something obvious, such as `Test TaskNotes Clipper Setup`.
+7. Choose one of your statuses.
+8. Click `Create Task`.
+9. Go back to Obsidian and check TaskNotes for the new task.
+
+If the task appears in TaskNotes, the create workflow is working. If statuses appear but the task is not created, the extension can read from TaskNotes but the create request is failing; recheck the API token in both TaskNotes and the Chrome extension options.
+
 ### Using Another Laptop
 
 You can use the extension on another laptop, but each laptop needs its own local setup. The current extension talks to TaskNotes through `http://localhost:8080`, so it connects to Obsidian on the same laptop where Chrome is running.
