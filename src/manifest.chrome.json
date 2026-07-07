@@ -3,7 +3,7 @@
 	"name": "FJG Obsidian Task Clipper",
 	"homepage_url": "https://github.com/jajuangarrett-ctrl/obsidian-clipper",
 	"version": "0.1.0",
-	"description": "Create FJG Obsidian task lines from selected Chrome text, with Taskboard statuses and project routing.",
+	"description": "Create TaskNotes tasks and append task updates from selected Chrome text.",
 	"permissions": [
 		"activeTab",
 		"clipboardWrite",

@@ -15,6 +15,7 @@ import {
 } from './storage';
 import {
 	TaskNotesClient,
+	TaskNotesFilterOptions,
 	TaskNotesTask,
 	normalizeFilterStatuses,
 } from './tasknotes-api';
@@ -96,7 +97,7 @@ async function refreshTaskNotesData(): Promise<void> {
 	try {
 		await client.health();
 		const [options, tasks] = await Promise.all([
-			client.filterOptions().catch(() => ({})),
+			client.filterOptions().catch((): TaskNotesFilterOptions => ({})),
 			client.queryActiveTasks(),
 		]);
 		const projects = Array.isArray(options.projects) ? options.projects : [];

@@ -112,6 +112,50 @@ h2 {
 	min-width: 76px;
 }
 
+.mode-tabs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+	padding: 4px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--panel);
+}
+
+.mode-tabs button {
+	border-color: transparent;
+	background: transparent;
+	font-weight: 700;
+}
+
+.mode-tabs button.active {
+	background: var(--accent);
+	color: #ffffff;
+}
+
+.api-status {
+	margin: 0;
+	padding: 8px 10px;
+	border: 1px solid #cbded5;
+	border-radius: 6px;
+	background: var(--soft);
+	color: var(--accent-dark);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.api-status.is-error {
+	border-color: #f2b8b5;
+	background: #fff2f0;
+	color: var(--danger);
+}
+
+.mode-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
 .field-group {
 	display: flex;
 	flex-direction: column;

@@ -153,8 +153,9 @@ export function normalizeFilterStatuses(options: TaskNotesFilterOptions, default
 		if (typeof item === 'string') {
 			next.push({ id: item, label: item });
 		} else if (item && typeof item === 'object') {
-			const id = String(item.value || item.id || item.name || item.label || '').trim();
-			const label = String(item.label || item.name || id).trim();
+			const record = item as Record<string, unknown>;
+			const id = String(record.value || record.id || record.name || record.label || '').trim();
+			const label = String(record.label || record.name || id).trim();
 			if (id) next.push({ id, label: label || id });
 		}
 	}
