@@ -4,11 +4,8 @@ import {
 	cleanProjectName,
 	cleanStatusId,
 	loadTaskClipperSettings,
-	loadTaskNotesToken,
 	saveTaskClipperSettings,
-	saveTaskNotesToken,
 } from './storage';
-import { TaskNotesClient, normalizeFilterStatuses } from './tasknotes-api';
 
 let settings: TaskClipperSettings;
 
@@ -23,11 +20,8 @@ async function init(): Promise<void> {
 }
 
 async function populateForm(): Promise<void> {
-	(document.getElementById('tasknotes-url') as HTMLInputElement).value = settings.taskNotesBaseUrl;
-	(document.getElementById('tasknotes-token') as HTMLInputElement).value = await loadTaskNotesToken();
 	(document.getElementById('vault-name') as HTMLInputElement).value = settings.vaultName;
 	(document.getElementById('destination-file') as HTMLInputElement).value = settings.destinationFile;
-	(document.getElementById('silent-open') as HTMLInputElement).checked = settings.silentOpen;
 	renderProjects();
 	renderTags();
 	renderStatuses();
@@ -39,12 +33,12 @@ function bindEvents(): void {
 	document.getElementById('tag-form')?.addEventListener('submit', addTag);
 	document.getElementById('status-form')?.addEventListener('submit', addStatus);
 	document.getElementById('reset-statuses')?.addEventListener('click', resetStatuses);
-	document.getElementById('test-tasknotes')?.addEventListener('click', testTaskNotes);
-	document.getElementById('sync-tasknotes')?.addEventListener('click', syncTaskNotesOptions);
 }
 
 async function saveForm(): Promise<void> {
-	await saveFormSilently();
+	settings.vaultName = (document.getElementById('vault-name') as HTMLInputElement).value;
+	settings.destinationFile = (document.getElementById('destination-file') as HTMLInputElement).value;
+	settings = await saveTaskClipperSettings(settings);
 	await populateForm();
 	setNotice('Settings saved.');
 }
@@ -163,7 +157,7 @@ function renderStatuses(): void {
 		const item = document.createElement('div');
 		item.className = 'manage-item';
 		const label = document.createElement('span');
-		label.textContent = `${status.label} (${status.id})`;
+		label.textContent = `${status.label} (#${status.id})`;
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.textContent = defaultIds.has(status.id) ? 'Default' : 'Delete';
@@ -178,53 +172,6 @@ function renderStatuses(): void {
 		item.append(label, button);
 		list.appendChild(item);
 	}
-}
-
-async function testTaskNotes(): Promise<void> {
-	try {
-		const client = await taskNotesClientFromForm();
-		await client.health();
-		setNotice('Connected to TaskNotes.');
-	} catch (error) {
-		setNotice(error instanceof Error ? error.message : String(error), true);
-	}
-}
-
-async function syncTaskNotesOptions(): Promise<void> {
-	try {
-		const client = await taskNotesClientFromForm();
-		const options = await client.filterOptions();
-		const projects = Array.isArray(options.projects) ? options.projects.map(String) : [];
-		const tags = Array.isArray(options.tags) ? options.tags.map(String) : [];
-		settings.projects = [...new Set([...settings.projects, ...projects.map(cleanProjectName)])]
-			.filter(Boolean)
-			.sort((a, b) => a.localeCompare(b));
-		settings.tags = [...new Set([...settings.tags, ...tags.map((tag) => tag.trim().replace(/^#/, ''))])]
-			.filter(Boolean)
-			.sort((a, b) => a.localeCompare(b));
-		settings.statuses = normalizeFilterStatuses(options, DEFAULT_STATUSES);
-		settings = await saveTaskClipperSettings(settings);
-		renderProjects();
-		renderTags();
-		renderStatuses();
-		setNotice(`Synced ${projects.length} projects, ${tags.length} tags, and ${settings.statuses.length} statuses.`);
-	} catch (error) {
-		setNotice(error instanceof Error ? error.message : String(error), true);
-	}
-}
-
-async function taskNotesClientFromForm(): Promise<TaskNotesClient> {
-	await saveFormSilently();
-	return new TaskNotesClient(settings, await loadTaskNotesToken());
-}
-
-async function saveFormSilently(): Promise<void> {
-	settings.taskNotesBaseUrl = (document.getElementById('tasknotes-url') as HTMLInputElement).value;
-	settings.vaultName = (document.getElementById('vault-name') as HTMLInputElement).value;
-	settings.destinationFile = (document.getElementById('destination-file') as HTMLInputElement).value;
-	settings.silentOpen = (document.getElementById('silent-open') as HTMLInputElement).checked;
-	settings = await saveTaskClipperSettings(settings);
-	await saveTaskNotesToken((document.getElementById('tasknotes-token') as HTMLInputElement).value);
 }
 
 function setNotice(message: string, isError = false): void {

@@ -10,31 +10,13 @@
 		<main class="settings-shell">
 			<header class="settings-header">
 				<div>
-					<p class="eyebrow">TaskNotes</p>
+					<p class="eyebrow">Obsidian</p>
 					<h1>Task Clipper Settings</h1>
 				</div>
 			</header>
 
 			<section class="settings-section">
-				<h2>TaskNotes API</h2>
-				<div class="settings-grid">
-					<label>
-						<span>API base URL</span>
-						<input id="tasknotes-url" type="url" autocomplete="off">
-					</label>
-					<label>
-						<span>Bearer token</span>
-						<input id="tasknotes-token" type="password" autocomplete="off">
-					</label>
-				</div>
-				<div class="button-row">
-					<button id="test-tasknotes" type="button">Test connection</button>
-					<button id="sync-tasknotes" class="secondary" type="button">Sync projects/statuses</button>
-				</div>
-			</section>
-
-			<section class="settings-section">
-				<h2>Fallback Obsidian Destination</h2>
+				<h2>Destination</h2>
 				<div class="settings-grid">
 					<label>
 						<span>Vault name (optional)</span>
@@ -45,10 +27,6 @@
 						<input id="destination-file" type="text" autocomplete="off">
 					</label>
 				</div>
-				<label class="checkbox-row">
-					<input id="silent-open" type="checkbox">
-					<span>Save fallback task lines without opening the note</span>
-				</label>
 			</section>
 
 			<section class="settings-section">
@@ -73,7 +51,7 @@
 				<h2>Statuses</h2>
 				<form id="status-form" class="manage-form status-form">
 					<input id="status-label" type="text" placeholder="Label" autocomplete="off">
-					<input id="status-id" type="text" placeholder="TaskNotes status value" autocomplete="off">
+					<input id="status-id" type="text" placeholder="Status tag value" autocomplete="off">
 					<button type="submit">Add status</button>
 				</form>
 				<div id="status-list" class="manage-list"></div>

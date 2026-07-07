@@ -1,9 +1,9 @@
 {
 	"manifest_version": 3,
-	"name": "Obsidian Web Clipper",
-	"homepage_url": "https://obsidian.md/",
-	"version": "1.7.0",
-	"description": "Save content from the web to Obsidian, in a private and durable format you can always access offline.",
+	"name": "FJG Obsidian Task Clipper",
+	"homepage_url": "https://github.com/jajuangarrett-ctrl/obsidian-clipper",
+	"version": "0.1.0",
+	"description": "Create Obsidian #task lines from selected browser text with status and project choices.",
 	"permissions": [
 		"activeTab",
 		"clipboardWrite",
@@ -55,10 +55,10 @@
 	"commands": {
 		"_execute_action": {
 			"suggested_key": {
-				"default": "Ctrl+Shift+O",
-				"mac": "Command+Shift+O"
+				"default": "Ctrl+Shift+F",
+				"mac": "Command+Shift+F"
 			},
-			"description": "Open Obsidian Clipper"
+			"description": "Open FJG Obsidian Task Clipper"
 		},
 		"quick_clip": {
 			"suggested_key": {

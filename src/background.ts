@@ -70,14 +70,13 @@ browser.runtime.onMessage.addListener((request: unknown) => {
 	const message = request as { action?: string; url?: string };
 
 	if (message.action === 'openObsidianUrl' && message.url) {
-		return browser.tabs.query({ active: true, currentWindow: true })
-			.then(async (tabs) => {
-				const currentTab = tabs[0];
-				if (currentTab?.id) {
-					await browser.tabs.update(currentTab.id, { url: message.url });
-					return { success: true };
+		return browser.tabs.create({ url: message.url, active: false })
+			.then(async (createdTab) => {
+				if (createdTab.id) {
+					setTimeout(() => {
+						browser.tabs.remove(createdTab.id as number).catch(() => undefined);
+					}, 1500);
 				}
-				await browser.tabs.create({ url: message.url });
 				return { success: true };
 			})
 			.catch((error) => ({

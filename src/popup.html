@@ -10,18 +10,11 @@
 		<main class="task-shell">
 			<header class="task-header">
 				<div>
-					<p class="eyebrow">TaskNotes</p>
+					<p class="eyebrow">Obsidian</p>
 					<h1>Task Clipper</h1>
 				</div>
 				<button id="open-settings" class="icon-button" type="button" title="Settings">Settings</button>
 			</header>
-
-			<div class="mode-tabs" role="tablist" aria-label="Clip mode">
-				<button id="mode-create" class="active" type="button">Create Task</button>
-				<button id="mode-update" type="button">Add Update</button>
-			</div>
-
-			<p id="api-status" class="api-status">Checking TaskNotes API...</p>
 
 			<section id="create-panel" class="mode-panel">
 				<section class="field-group">
@@ -30,8 +23,8 @@
 				</section>
 
 				<section class="field-group">
-					<label for="task-details">Details</label>
-					<textarea id="task-details" rows="6" placeholder="Selected text will appear here."></textarea>
+					<label for="task-details">Task text</label>
+					<textarea id="task-details" rows="7" placeholder="Selected text will appear here."></textarea>
 				</section>
 
 				<div class="two-column">
@@ -52,23 +45,6 @@
 				</section>
 			</section>
 
-			<section id="update-panel" class="mode-panel is-hidden">
-				<div class="inline-add">
-					<input id="task-search" type="search" placeholder="Search active tasks" autocomplete="off">
-					<button id="refresh-tasks" type="button">Refresh</button>
-				</div>
-
-				<section class="field-group">
-					<label for="task-select">Task</label>
-					<select id="task-select"></select>
-				</section>
-
-				<section class="field-group">
-					<label for="update-text">Update text</label>
-					<textarea id="update-text" rows="7" placeholder="Selected text will be appended to the task note."></textarea>
-				</section>
-			</section>
-
 			<label class="checkbox-row">
 				<input id="include-source" type="checkbox" checked>
 				<span>Include page source</span>
@@ -77,7 +53,7 @@
 			<section class="preview">
 				<div class="preview-header">
 					<span>Preview</span>
-					<span id="task-count">TaskNotes</span>
+					<span id="task-count">0 tasks</span>
 				</div>
 				<pre id="task-preview"></pre>
 			</section>
@@ -85,7 +61,6 @@
 			<p id="notice" class="notice" role="status"></p>
 
 			<footer class="task-actions">
-				<button id="copy-task" type="button">Copy Fallback</button>
 				<button id="save-task" class="primary" type="button">Create Task</button>
 			</footer>
 		</main>

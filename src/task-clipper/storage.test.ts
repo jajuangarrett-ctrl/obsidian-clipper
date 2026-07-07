@@ -7,7 +7,7 @@ describe('task clipper settings', () => {
 		expect(normalizeSettings(undefined).vaultName).toBe('');
 	});
 
-	test('allows a blank vault name so fallback can use the active Obsidian vault', () => {
+	test('allows a blank vault name so Obsidian can use the active vault', () => {
 		expect(normalizeSettings({ vaultName: '' }).vaultName).toBe('');
 		expect(normalizeSettings({ vaultName: '   ' }).vaultName).toBe('');
 	});
@@ -20,7 +20,7 @@ describe('task clipper settings', () => {
 		expect(normalizeSettings({ vaultName: '  Work Vault  ' }).vaultName).toBe('Work Vault');
 	});
 
-	test('keeps the TaskNotes base URL fallback separate from the taskboard URL', () => {
-		expect(normalizeSettings({ taskNotesBaseUrl: '' }).taskNotesBaseUrl).toBe(DEFAULT_SETTINGS.taskNotesBaseUrl);
+	test('normalizes the destination file without an md extension', () => {
+		expect(normalizeSettings({ destinationFile: '/08 Tasks/Tasks.md' }).destinationFile).toBe('08 Tasks/Tasks');
 	});
 });

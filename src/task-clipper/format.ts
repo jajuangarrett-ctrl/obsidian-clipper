@@ -27,13 +27,16 @@ export function buildTaskLines(
 	statusId: string,
 	projectName: string,
 	statuses: StatusOption[],
+	tags: string[] = ['task'],
 ): BuiltTask[] {
 	const project = cleanProjectName(projectName);
+	const tagText = normalizeTags(tags).map((tag) => `#${tag}`).join(' ');
 	return splitTaskText(input).map((title) => {
 		const titleWithoutStatuses = stripStatusTags(title, statuses);
 		const parts = ['- [ ]', titleWithoutStatuses];
 		if (project) parts.push(`PJ: ${project}`);
-		parts.push(`#task #${statusId}`);
+		parts.push(tagText);
+		if (statusId) parts.push(`#${statusId}`);
 		return {
 			title: titleWithoutStatuses,
 			details: '',
@@ -44,62 +47,19 @@ export function buildTaskLines(
 	});
 }
 
-export function buildTaskNotePayload(
+export function buildObsidianTaskContent(
 	input: string,
 	statusId: string,
 	projectName: string,
 	statuses: StatusOption[],
+	tags: string[],
 	context: PageContext,
-): BuiltTask {
-	const tasks = buildTaskLines(input, statusId, projectName, statuses);
-	const first = tasks[0] || {
-		title: cleanTaskTitle(input) || context.title || 'Clipped task',
-		details: '',
-		line: '',
-		status: statusId,
-		project: cleanProjectName(projectName),
-	};
-	const details = buildDetails(input, context);
-	return {
-		...first,
-		title: first.title || context.title || 'Clipped task',
-		details,
-	};
-}
-
-export function appendUpdateLog(
-	existingDetails: string | undefined,
-	updateText: string,
-	context: PageContext,
-	now: Date = new Date(),
 ): string {
-	const cleanUpdate = updateText.trim();
-	if (!cleanUpdate) return existingDetails || '';
-
 	const source = buildSourceLine(context);
-	const entryParts = [
-		`### ${formatLocalDateTime(now)}`,
-		cleanUpdate,
-		source,
-	].filter(Boolean);
-	const entry = entryParts.join('\n\n');
-	const details = (existingDetails || '').trimEnd();
-	const updatesHeading = /^## Updates\s*$/im;
-
-	if (!details) {
-		return `## Updates\n\n${entry}\n`;
-	}
-	if (updatesHeading.test(details)) {
-		return details.replace(updatesHeading, (match) => `${match}\n\n${entry}`) + '\n';
-	}
-	return `${details}\n\n## Updates\n\n${entry}\n`;
-}
-
-function buildDetails(input: string, context: PageContext): string {
-	const text = input.trim();
-	const source = buildSourceLine(context);
-	if (!source) return text;
-	return text ? `${text}\n\n${source}` : source;
+	const tasks = buildTaskLines(input, statusId, projectName, statuses, tags);
+	return tasks
+		.map((task) => source ? `${task.line}\n  - ${source}` : task.line)
+		.join('\n');
 }
 
 function buildSourceLine(context: PageContext): string {
@@ -111,17 +71,16 @@ function buildSourceLine(context: PageContext): string {
 	return '';
 }
 
-function formatLocalDateTime(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	const hours = String(date.getHours()).padStart(2, '0');
-	const minutes = String(date.getMinutes()).padStart(2, '0');
-	return `${year}-${month}-${day} ${hours}:${minutes}`;
-}
-
 function escapeMarkdownLinkText(value: string): string {
 	return value.replace(/[[\]\\]/g, '\\$&');
+}
+
+function normalizeTags(tags: string[]): string[] {
+	const clean = tags
+		.map((tag) => String(tag || '').trim().replace(/^#/, ''))
+		.filter(Boolean);
+	if (!clean.includes('task')) clean.unshift('task');
+	return [...new Set(clean)];
 }
 
 function cleanTaskTitle(value: string): string {

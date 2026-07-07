@@ -1,0 +1,10 @@
+{
+  "id": "fjg-task-clipper-bridge",
+  "name": "FJG Task Clipper Bridge",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Receives FJG Chrome task clips and appends plain Markdown tasks to the vault.",
+  "author": "Franklin Garrett",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
