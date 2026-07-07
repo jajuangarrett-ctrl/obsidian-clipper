@@ -4,6 +4,8 @@ Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianm
 
 The extension now works with [TaskNotes](https://github.com/callumalpass/tasknotes), using its local HTTP API to create one-note-per-task Markdown tasks and append running updates to existing task notes.
 
+Detailed usage guide with screenshots: [FJG TaskNotes Clipper User Guide](docs/FJG%20TaskNotes%20Clipper%20User%20Guide.md).
+
 ## What It Does
 
 - Create a new TaskNotes task from selected Chrome text.
