@@ -156,6 +156,10 @@ h2 {
 	gap: 10px;
 }
 
+.is-hidden {
+	display: none !important;
+}
+
 .field-group {
 	display: flex;
 	flex-direction: column;
