@@ -2,13 +2,17 @@
 
 Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) for Franklin Garrett's FJG task workflow.
 
-The extension turns selected Chrome text into one or more Obsidian task lines and appends them to a configured note.
+The extension now works with [TaskNotes](https://github.com/callumalpass/tasknotes), using its local HTTP API to create one-note-per-task Markdown tasks and append running updates to existing task notes.
 
-```md
-- [ ] Review summer schedule request PJ: Basic Needs #task #DoSoon
-```
+## What It Does
 
-The default statuses mirror the FJG iOS Taskboard app:
+- Create a new TaskNotes task from selected Chrome text.
+- Choose TaskNotes status and project in the popup.
+- Add selected Chrome text as a dated update to an existing active TaskNotes task.
+- Keep `#task` on created tasks.
+- Fall back to appending an inline Obsidian checkbox task when TaskNotes API is unavailable.
+
+Default FJG statuses:
 
 - `Inbox`
 - `DoFirst`
@@ -17,9 +21,25 @@ The default statuses mirror the FJG iOS Taskboard app:
 - `Waiting`
 - `On-Hold`
 
-`Done` is treated as a completed task state in Taskboard, not as a capture status for new tasks.
+## TaskNotes Setup
 
-## Build
+In Obsidian:
+
+1. Install and enable TaskNotes.
+2. Open `Settings -> TaskNotes -> Integrations -> HTTP API`.
+3. Enable the HTTP API.
+4. Keep the default port `8080`, or update the extension setting to match your port.
+5. Optional but recommended: set an API auth token, then paste the same token into the extension settings.
+
+The default extension API URL is:
+
+```text
+http://localhost:8080
+```
+
+TaskNotes API is desktop-only, so Obsidian must be running on the Mac for create/update mode to work.
+
+## Chrome Setup
 
 ```bash
 npm install
@@ -33,75 +53,61 @@ dist/
 builds/fjg-obsidian-task-clipper-0.1.0-chrome.zip
 ```
 
-## Load In Chrome
+Load the unpacked extension:
 
 1. Open `chrome://extensions`.
 2. Turn on Developer mode.
 3. Click Load unpacked.
 4. Select this folder's `dist/` directory.
-5. Pin `FJG Obsidian Task Clipper` from the Chrome extensions menu.
+5. Pin `FJG Obsidian Task Clipper`.
 
-## Configure
+## Extension Settings
 
 Open the extension options page.
 
-Default Obsidian settings:
+TaskNotes:
+
+- API base URL: `http://localhost:8080`
+- Bearer token: optional TaskNotes API token
+- Test connection: checks `GET /api/health`
+- Sync projects/statuses: pulls TaskNotes filter options
+
+Fallback Obsidian destination:
 
 - Vault name: `FJG Vault`
 - Task page: `08 Tasks/Tasks`
-- Save without opening the note: on
-
-The task page value should be the Obsidian note path without `.md`.
-
-## Projects
-
-Projects are stored in Chrome extension sync storage.
-
-To add projects:
-
-1. Open extension options.
-2. Use the Projects section.
-3. Add each project name.
-
-You can also add a project directly from the popup. Project names are written into task lines as `PJ: Project Name`, which matches the existing FJG task parser.
-
-## Statuses
-
-Default statuses are protected in settings. You can add custom statuses with a label and hashtag value.
-
-Example:
-
-- Label: `Follow Up`
-- Hashtag: `FollowUp`
-
-Custom statuses work for Obsidian task lines. The live FJG Taskboard API currently supports only the default bucket values above; custom statuses sent to Taskboard fall back to `Inbox`.
-
-## Optional Taskboard API
-
-The extension can also create tasks directly in the deployed FJG Taskboard.
-
-In settings:
-
-1. Set Taskboard URL to `https://fjg-taskboard.netlify.app`.
-2. Enter the dashboard password.
-3. Click Test connection.
-4. Click Sync projects to pull the live managed project list.
-5. Turn on Also create tasks in FJG Taskboard if you want Chrome captures to write to both Obsidian and the Taskboard API.
-
-The password is stored in Chrome local extension storage, not sync storage.
+- Save fallback task lines without opening the note: on
 
 ## Use
 
-1. Select text on a web page.
-2. Click the extension icon, or right-click and choose Create Obsidian task from selection.
-3. Choose status and project.
-4. Click Add to Obsidian.
+Create a task:
 
-Multiple selected lines become multiple task lines.
+1. Select text on a web page.
+2. Click the extension icon.
+3. Choose `Create Task`.
+4. Edit title/details, status, project, and tags.
+5. Click Create Task.
+
+Add an update:
+
+1. Select update text on a web page.
+2. Click the extension icon.
+3. Choose `Add Update`.
+4. Search and choose the existing active TaskNotes task.
+5. Click Add Update.
+
+Update entries are appended to the task note body like this:
+
+```md
+## Updates
+
+### 2026-07-07 16:30
+Selected clipped text
+
+Source: [Page title](https://example.com/page)
+```
 
 ## Verification
-
-Current verification commands:
 
 ```bash
 npm test
