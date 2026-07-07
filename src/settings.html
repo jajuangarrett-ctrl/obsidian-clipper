@@ -9,12 +9,32 @@
 	<body class="settings-page">
 		<main class="settings-shell">
 			<header class="settings-header">
-				<p class="eyebrow">FJG Vault</p>
-				<h1>Task Clipper Settings</h1>
+				<div>
+					<p class="eyebrow">TaskNotes</p>
+					<h1>Task Clipper Settings</h1>
+				</div>
 			</header>
 
 			<section class="settings-section">
-				<h2>Obsidian Destination</h2>
+				<h2>TaskNotes API</h2>
+				<div class="settings-grid">
+					<label>
+						<span>API base URL</span>
+						<input id="tasknotes-url" type="url" autocomplete="off">
+					</label>
+					<label>
+						<span>Bearer token</span>
+						<input id="tasknotes-token" type="password" autocomplete="off">
+					</label>
+				</div>
+				<div class="button-row">
+					<button id="test-tasknotes" type="button">Test connection</button>
+					<button id="sync-tasknotes" class="secondary" type="button">Sync projects/statuses</button>
+				</div>
+			</section>
+
+			<section class="settings-section">
+				<h2>Fallback Obsidian Destination</h2>
 				<div class="settings-grid">
 					<label>
 						<span>Vault name</span>
@@ -27,7 +47,7 @@
 				</div>
 				<label class="checkbox-row">
 					<input id="silent-open" type="checkbox">
-					<span>Save without opening the note</span>
+					<span>Save fallback task lines without opening the note</span>
 				</label>
 			</section>
 
@@ -44,33 +64,11 @@
 				<h2>Statuses</h2>
 				<form id="status-form" class="manage-form status-form">
 					<input id="status-label" type="text" placeholder="Label" autocomplete="off">
-					<input id="status-id" type="text" placeholder="Hashtag" autocomplete="off">
+					<input id="status-id" type="text" placeholder="TaskNotes status value" autocomplete="off">
 					<button type="submit">Add status</button>
 				</form>
 				<div id="status-list" class="manage-list"></div>
 				<button id="reset-statuses" class="secondary" type="button">Reset default statuses</button>
-			</section>
-
-			<section class="settings-section">
-				<h2>Taskboard API</h2>
-				<div class="settings-grid">
-					<label>
-						<span>Taskboard URL</span>
-						<input id="taskboard-url" type="url" autocomplete="off">
-					</label>
-					<label>
-						<span>Dashboard password</span>
-						<input id="taskboard-password" type="password" autocomplete="off">
-					</label>
-				</div>
-				<label class="checkbox-row">
-					<input id="add-to-taskboard" type="checkbox">
-					<span>Also create tasks in FJG Taskboard</span>
-				</label>
-				<div class="button-row">
-					<button id="sync-projects" type="button">Sync projects</button>
-					<button id="test-taskboard" class="secondary" type="button">Test connection</button>
-				</div>
 			</section>
 
 			<p id="settings-notice" class="notice" role="status"></p>

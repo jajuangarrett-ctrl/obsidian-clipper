@@ -15,10 +15,12 @@ export type TaskClipperSettings = {
 	silentOpen: boolean;
 	taskboardBaseUrl: string;
 	addToTaskboard: boolean;
+	taskNotesBaseUrl: string;
 };
 
 const SETTINGS_KEY = 'fjgTaskClipperSettings';
 const TASKBOARD_PASSWORD_KEY = 'fjgTaskClipperTaskboardPassword';
+const TASKNOTES_TOKEN_KEY = 'fjgTaskClipperTaskNotesToken';
 
 export const DEFAULT_STATUSES: StatusOption[] = [
 	{ id: 'Inbox', label: 'Inbox' },
@@ -39,6 +41,7 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	silentOpen: true,
 	taskboardBaseUrl: 'https://fjg-taskboard.netlify.app',
 	addToTaskboard: false,
+	taskNotesBaseUrl: 'http://localhost:8080',
 };
 
 export function cleanStatusId(value: string): string {
@@ -72,6 +75,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		silentOpen: Boolean(merged.silentOpen),
 		taskboardBaseUrl: normalizeBaseUrl(merged.taskboardBaseUrl),
 		addToTaskboard: Boolean(merged.addToTaskboard),
+		taskNotesBaseUrl: normalizeBaseUrl(merged.taskNotesBaseUrl),
 	};
 }
 
@@ -93,6 +97,15 @@ export async function loadTaskboardPassword(): Promise<string> {
 
 export async function saveTaskboardPassword(password: string): Promise<void> {
 	await browser.storage.local.set({ [TASKBOARD_PASSWORD_KEY]: password });
+}
+
+export async function loadTaskNotesToken(): Promise<string> {
+	const result = await browser.storage.local.get(TASKNOTES_TOKEN_KEY) as Record<string, string | undefined>;
+	return result[TASKNOTES_TOKEN_KEY] || '';
+}
+
+export async function saveTaskNotesToken(token: string): Promise<void> {
+	await browser.storage.local.set({ [TASKNOTES_TOKEN_KEY]: token.trim() });
 }
 
 function normalizeStatuses(statuses: StatusOption[] | undefined): StatusOption[] {

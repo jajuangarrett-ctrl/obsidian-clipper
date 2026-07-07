@@ -10,43 +10,73 @@
 		<main class="task-shell">
 			<header class="task-header">
 				<div>
-					<p class="eyebrow">FJG Vault</p>
+					<p class="eyebrow">TaskNotes</p>
 					<h1>Task Clipper</h1>
 				</div>
 				<button id="open-settings" class="icon-button" type="button" title="Settings">Settings</button>
 			</header>
 
-			<section class="field-group">
-				<label for="task-text">Selected text</label>
-				<textarea id="task-text" rows="7" placeholder="Select text on a page, then open the extension."></textarea>
-			</section>
-
-			<div class="two-column">
-				<section class="field-group">
-					<label for="status-select">Status</label>
-					<select id="status-select"></select>
-				</section>
-				<section class="field-group">
-					<label for="project-select">Project</label>
-					<select id="project-select"></select>
-				</section>
+			<div class="mode-tabs" role="tablist" aria-label="Clip mode">
+				<button id="mode-create" class="active" type="button">Create Task</button>
+				<button id="mode-update" type="button">Add Update</button>
 			</div>
 
-			<section class="inline-add" id="project-add-row">
-				<input id="new-project" type="text" placeholder="New project" autocomplete="off">
-				<button id="add-project" type="button">Add</button>
+			<p id="api-status" class="api-status">Checking TaskNotes API...</p>
+
+			<section id="create-panel" class="mode-panel">
+				<section class="field-group">
+					<label for="task-title">Task title</label>
+					<input id="task-title" type="text" autocomplete="off">
+				</section>
+
+				<section class="field-group">
+					<label for="task-details">Details</label>
+					<textarea id="task-details" rows="6" placeholder="Selected text will appear here."></textarea>
+				</section>
+
+				<div class="two-column">
+					<section class="field-group">
+						<label for="status-select">Status</label>
+						<select id="status-select"></select>
+					</section>
+					<section class="field-group">
+						<label for="project-select">Project</label>
+						<select id="project-select"></select>
+					</section>
+				</div>
+
+				<section class="field-group">
+					<label for="tags-field">Tags</label>
+					<input id="tags-field" type="text" value="task" autocomplete="off">
+				</section>
 			</section>
 
-			<section class="inline-add" id="status-add-row">
-				<input id="new-status-label" type="text" placeholder="New status label" autocomplete="off">
-				<input id="new-status-id" type="text" placeholder="Hashtag" autocomplete="off">
-				<button id="add-status" type="button">Add</button>
+			<section id="update-panel" class="mode-panel is-hidden">
+				<div class="inline-add">
+					<input id="task-search" type="search" placeholder="Search active tasks" autocomplete="off">
+					<button id="refresh-tasks" type="button">Refresh</button>
+				</div>
+
+				<section class="field-group">
+					<label for="task-select">Task</label>
+					<select id="task-select"></select>
+				</section>
+
+				<section class="field-group">
+					<label for="update-text">Update text</label>
+					<textarea id="update-text" rows="7" placeholder="Selected text will be appended to the task note."></textarea>
+				</section>
 			</section>
+
+			<label class="checkbox-row">
+				<input id="include-source" type="checkbox" checked>
+				<span>Include page source</span>
+			</label>
 
 			<section class="preview">
 				<div class="preview-header">
 					<span>Preview</span>
-					<span id="task-count">0 tasks</span>
+					<span id="task-count">TaskNotes</span>
 				</div>
 				<pre id="task-preview"></pre>
 			</section>
@@ -54,8 +84,8 @@
 			<p id="notice" class="notice" role="status"></p>
 
 			<footer class="task-actions">
-				<button id="copy-task" type="button">Copy</button>
-				<button id="save-task" class="primary" type="button">Add to Obsidian</button>
+				<button id="copy-task" type="button">Copy Fallback</button>
+				<button id="save-task" class="primary" type="button">Create Task</button>
 			</footer>
 		</main>
 		<script type="module" src="popup.js"></script>
