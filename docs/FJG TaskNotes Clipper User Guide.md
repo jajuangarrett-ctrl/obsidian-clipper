@@ -17,7 +17,34 @@ If you are clipping from the always-on Mac, run Obsidian there. If you are clipp
 
 ![TaskNotes API and fallback settings](screenshots/tasknotes-settings.png)
 
-### A. TaskNotes Setup in Obsidian
+### A. Install the Chrome Extension
+
+These steps happen in Chrome. Do this first if the FJG TaskNotes Clipper is not already installed.
+
+1. Open Chrome.
+2. Go to `chrome://extensions`.
+3. Turn on `Developer mode`.
+4. Click `Load unpacked`.
+5. Select this folder:
+
+```text
+/Users/franklingarrett/Codex/plugins/obsidian-task-clipper/dist
+```
+
+6. Confirm that `FJG Obsidian Task Clipper` or `FJG TaskNotes Clipper` appears in the extensions list.
+7. Pin the extension to the Chrome toolbar so it is easy to open while browsing.
+
+If you do not have the `dist` folder yet, build it from the plugin source folder:
+
+```bash
+cd /Users/franklingarrett/Codex/plugins/obsidian-task-clipper
+npm install
+npm run build:chrome
+```
+
+After the extension is installed, continue with the Obsidian and TaskNotes setup below.
+
+### B. TaskNotes Setup in Obsidian
 
 These steps happen inside Obsidian, in the TaskNotes plugin settings.
 
@@ -29,7 +56,7 @@ These steps happen inside Obsidian, in the TaskNotes plugin settings.
 
 TaskNotes will not show `Test connection`, `Sync projects/statuses`, or `Save settings` for this clipper. Those controls belong to the Chrome extension settings in the next section.
 
-### B. FJG TaskNotes Clipper Setup in Chrome
+### C. FJG TaskNotes Clipper Setup in Chrome
 
 These steps happen in Chrome, in the FJG TaskNotes Clipper extension options page.
 
