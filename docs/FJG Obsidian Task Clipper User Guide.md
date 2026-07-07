@@ -7,26 +7,61 @@ Version 2 replaces the old TaskNotes HTTP API workflow. It uses two local pieces
 - A Chrome extension loaded from this repo's `dist/` folder.
 - A small Obsidian companion plugin named `FJG Task Clipper Bridge`.
 
-The extension sends selected Chrome text to Obsidian with an `obsidian://fjg-task-clipper` URL. The bridge receives it and appends plain Markdown task lines to your configured task page.
+The extension sends selected Chrome text to Obsidian with an `obsidian://fjg-task-clipper` URL. The bridge receives it and creates or updates Markdown task notes directly in the vault.
 
 No TaskNotes API server, localhost port, bearer token, or TaskNotes authentication token is required.
 
 ## What It Creates
 
-By default, tasks are appended to:
+By default, new task notes are created in:
+
+```text
+TaskNotes/Tasks/
+```
+
+Each task gets its own Markdown note. The bridge also appends a linked checkbox item to:
 
 ```text
 08 Tasks/Tasks.md
 ```
 
-Each saved task is a normal Obsidian checkbox task with `#task`, a status tag, and an optional project:
+That gives you a compact index page without forcing every update into one long document.
+
+Example task note:
 
 ```md
-- [ ] Review the budget packet PJ: Basic Needs #task #DoSoon
-  - Source: [Budget page](https://example.com/budget)
+---
+title: Review the budget packet
+status: DoSoon
+priority: normal
+projects:
+  - Basic Needs
+tags:
+  - task
+  - DoSoon
+---
+# Review the budget packet
+
+- [ ] Review the budget packet #task #DoSoon
+
+Project: Basic Needs
+
+## Details
+
+Selected text or edited task details.
+
+## Source
+
+Source: [Budget page](https://example.com/budget)
+
+## Updates
 ```
 
-This keeps the workflow compatible with Obsidian task plugins that understand Markdown checkbox tasks and tags.
+Example index line:
+
+```md
+- [ ] [[TaskNotes/Tasks/20260707060500 Review the budget packet|Review the budget packet]] PJ: Basic Needs #task #DoSoon
+```
 
 ## Files Involved
 
@@ -120,7 +155,8 @@ Recommended destination settings:
 
 ```text
 Vault name: leave blank
-Task page: 08 Tasks/Tasks
+Task index page: 08 Tasks/Tasks
+Task notes folder: TaskNotes/Tasks
 ```
 
 Leaving the vault name blank tells Obsidian to use the currently open vault. This is usually more reliable than hardcoding `FJG Vault`, especially when Obsidian is already open to the right vault.
@@ -136,17 +172,7 @@ To add a project:
 3. Click `Add project`.
 4. Click `Save settings`.
 
-The project appears in the popup's `Project` dropdown. When selected, it is written into the task line as:
-
-```md
-PJ: Project Name
-```
-
-Example:
-
-```md
-- [ ] Follow up with Basic Needs team PJ: Basic Needs #task #Waiting
-```
+The project appears in the popup's `Project` dropdown. When selected, it is written into the task note frontmatter and index line.
 
 ## Statuses
 
@@ -164,9 +190,10 @@ Each status has:
 - A label shown in the extension.
 - A tag value saved on the task.
 
-For example, the status label `Do Soon` saves the tag:
+For example, the status label `Do Soon` saves the status value and tag:
 
 ```md
+status: DoSoon
 #DoSoon
 ```
 
@@ -198,44 +225,74 @@ The extension always keeps `task` as a default tag so every created item include
 
 You can add optional tags in extension `Options`. In the popup, the `Tags` field can contain one or more tags separated by spaces or commas.
 
-Example:
-
-```text
-task followup BasicNeeds
-```
-
 ## Create A Task
 
 1. Select text on a web page.
 2. Click the `FJG Obsidian Task Clipper` icon.
-3. Edit the task text if needed.
-4. Choose a status.
-5. Choose a project, or leave `No project`.
-6. Adjust tags if needed.
-7. Keep `Include page source` checked if you want the source URL saved.
-8. Click `Create Task`.
+3. Choose `Create Task`.
+4. Edit the task title and details if needed.
+5. Choose a status.
+6. Choose a project, or leave `No project`.
+7. Adjust tags if needed.
+8. Keep `Include page source` checked if you want the source URL saved.
+9. Click `Create Task`.
 
-Obsidian should open or come forward, and the task should be appended to the configured task page.
+Obsidian should open or come forward. A dedicated task note should be created in `TaskNotes/Tasks`, and a linked checkbox should be appended to `08 Tasks/Tasks.md`.
+
+## Add An Update
+
+Use `Add Update` when the task already exists and selected web text should become a dated update inside that task note.
+
+1. Select update text on a web page.
+2. Right-click and choose `Add selection as task update`, or click the extension icon and choose `Add Update`.
+3. In `Task to update`, type enough of the task title or note filename to identify one task.
+4. Edit the update text if needed.
+5. Keep `Include page source` checked if you want the source URL saved.
+6. Click `Add Update`.
+
+The bridge searches `TaskNotes/Tasks` for a matching Markdown note.
+
+- If it finds one exact match, it appends the update under `## Updates`.
+- If it finds no match, it shows an Obsidian notice.
+- If it finds multiple matches, it asks you to type more of the title or use the note filename.
+
+Example update:
+
+```md
+## Updates
+
+### 2026-07-07 06:06
+
+Selected update text from Chrome.
+
+Source: [Update page](https://example.com/update)
+```
 
 ## Verify It Worked
 
 After clicking `Create Task`, open:
 
 ```text
+/Users/franklingarrett/FJG Vault/TaskNotes/Tasks/
+```
+
+Confirm a new task note was created. Then open:
+
+```text
 /Users/franklingarrett/FJG Vault/08 Tasks/Tasks.md
 ```
 
-Confirm a new line was appended in this shape:
+Confirm a linked checkbox item points to the new task note.
+
+After clicking `Add Update`, open the task note and confirm the update appears under:
 
 ```md
-- [ ] Your selected text PJ: Your Project #task #YourStatus
+## Updates
 ```
-
-If `Include page source` was checked, the next indented line should include the source page.
 
 ## Troubleshooting
 
-If nothing happens after clicking `Create Task`:
+If nothing happens after clicking `Create Task` or `Add Update`:
 
 1. Confirm Obsidian is running.
 2. Confirm the FJG Vault is open.
@@ -243,9 +300,9 @@ If nothing happens after clicking `Create Task`:
 4. Restart Obsidian once.
 5. Reload the unpacked Chrome extension from `chrome://extensions`.
 
-If Obsidian opens but the task does not appear:
+If Obsidian opens but no task note appears:
 
-1. Check that the extension `Task page` setting is `08 Tasks/Tasks`.
+1. Check that the extension `Task notes folder` setting is `TaskNotes/Tasks`.
 2. Confirm the bridge plugin is installed at:
 
 ```text
@@ -254,6 +311,12 @@ If Obsidian opens but the task does not appear:
 
 3. Open Obsidian Developer Tools and check for `FJG Task Clipper Bridge` errors.
 
+If `Add Update` cannot find a task:
+
+1. Type more of the task title.
+2. Or type the task note filename without `.md`.
+3. Confirm the task note lives in `TaskNotes/Tasks`.
+
 If Chrome says the extension changed:
 
 1. Open `chrome://extensions`.
@@ -261,7 +324,7 @@ If Chrome says the extension changed:
 
 If a selected text block is very long:
 
-The extension may copy the task lines to the clipboard instead of opening Obsidian, because protocol URLs have practical length limits. Paste the copied task lines manually into `08 Tasks/Tasks.md`.
+The extension may copy the task or update text to the clipboard instead of opening Obsidian, because protocol URLs have practical length limits. Paste the copied text manually into the task note.
 
 ## What Is Different From The Old Version
 
@@ -273,9 +336,9 @@ http://localhost:8080/api/health
 
 That required Obsidian, TaskNotes, the TaskNotes HTTP API, local network permissions, and a matching bearer token. Chrome and macOS made that flow fragile.
 
-Version 2 removes that dependency. The extension now creates regular Markdown tasks through Obsidian itself.
+Version 2 removes that dependency. The extension now creates and updates Markdown task notes through Obsidian itself.
 
-You can still use TaskNotes or other Obsidian task plugins afterward if they read normal Markdown checkbox tasks and tags, but this clipper does not require TaskNotes to create the task.
+The generated task notes are still compatible with TaskNotes-style organization because they live in `TaskNotes/Tasks`, carry the `task` tag, and use frontmatter such as `title`, `status`, `projects`, `dateCreated`, and `dateModified`.
 
 ## Developer Verification
 
@@ -287,4 +350,4 @@ npm run build:chrome
 node --check obsidian-plugin/main.js
 ```
 
-The local Obsidian bridge can also be smoke-tested by opening an `obsidian://fjg-task-clipper` payload that writes to a separate test note.
+The local Obsidian bridge can also be smoke-tested with an `obsidian://fjg-task-clipper` payload that creates a test task note and then appends an update to it.

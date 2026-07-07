@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildObsidianTaskContent } from './format';
+import { buildObsidianTaskContent, buildUpdateBlock } from './format';
 
 const STATUSES = [
 	{ id: 'Inbox', label: 'Inbox' },
@@ -44,5 +44,15 @@ describe('task clipper formatting', () => {
 		);
 
 		expect(result).toBe('- [ ] First task #task #Waiting\n- [ ] Second task #task #Waiting');
+	});
+
+	test('builds a dated update block with source', () => {
+		const result = buildUpdateBlock(
+			'Fresh update',
+			{ title: 'Agenda', url: 'https://example.com/agenda' },
+			new Date('2026-07-07T09:05:00'),
+		);
+
+		expect(result).toBe('### 2026-07-07 09:05\n\nFresh update\n\nSource: [Agenda](https://example.com/agenda)');
 	});
 });

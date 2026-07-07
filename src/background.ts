@@ -7,6 +7,7 @@ type PendingContext = {
 	title: string;
 	url: string;
 	createdAt: number;
+	mode?: 'create' | 'update';
 };
 
 async function setupContextMenus(): Promise<void> {
@@ -14,6 +15,11 @@ async function setupContextMenus(): Promise<void> {
 	await browser.contextMenus.create({
 		id: 'fjg-create-task-selection',
 		title: 'Create Obsidian task from selection',
+		contexts: ['selection'],
+	});
+	await browser.contextMenus.create({
+		id: 'fjg-update-task-selection',
+		title: 'Add selection as task update',
 		contexts: ['selection'],
 	});
 	await browser.contextMenus.create({
@@ -51,6 +57,7 @@ browser.runtime.onStartup.addListener(() => {
 browser.contextMenus.onClicked.addListener(async (info, tab) => {
 	if (
 		info.menuItemId !== 'fjg-create-task-selection' &&
+		info.menuItemId !== 'fjg-update-task-selection' &&
 		info.menuItemId !== 'fjg-create-task-page'
 	) {
 		return;
@@ -61,6 +68,7 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
 		title: tab?.title || '',
 		url: info.pageUrl || tab?.url || '',
 		createdAt: Date.now(),
+		mode: info.menuItemId === 'fjg-update-task-selection' ? 'update' : 'create',
 	});
 	await openPopup();
 });

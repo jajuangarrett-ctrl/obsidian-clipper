@@ -8,6 +8,7 @@ export type StatusOption = {
 export type TaskClipperSettings = {
 	vaultName: string;
 	destinationFile: string;
+	taskFolder: string;
 	projects: string[];
 	tags: string[];
 	statuses: StatusOption[];
@@ -30,6 +31,7 @@ export const DEFAULT_STATUSES: StatusOption[] = [
 export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	vaultName: '',
 	destinationFile: '08 Tasks/Tasks',
+	taskFolder: 'TaskNotes/Tasks',
 	projects: [],
 	tags: ['task'],
 	statuses: DEFAULT_STATUSES,
@@ -65,6 +67,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 	return {
 		vaultName: normalizeVaultName(source.vaultName, hasVaultName),
 		destinationFile: normalizeDestinationFile(merged.destinationFile),
+		taskFolder: normalizeDestinationFile(merged.taskFolder || DEFAULT_SETTINGS.taskFolder),
 		projects,
 		tags,
 		statuses,

@@ -1,8 +1,9 @@
 import browser from '../utils/browser-polyfill';
 import {
+	PageContext,
 	buildObsidianTaskContent,
 	buildTaskLines,
-	PageContext,
+	buildUpdateBlock,
 } from './format';
 import {
 	TaskClipperSettings,
@@ -14,19 +15,46 @@ const PENDING_CONTEXT_KEY = 'fjgTaskClipperPendingContext';
 const PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const MAX_OBSIDIAN_URL_LENGTH = 60000;
 
-type ProtocolPayload = {
+type PopupMode = 'create' | 'update';
+
+type CreateTaskPayload = {
 	version: 2;
-	destinationFile: string;
-	content: string;
+	action: 'create-task-note';
+	taskFolder: string;
+	indexFile: string;
+	title: string;
+	details: string;
+	status: string;
+	project: string;
+	tags: string[];
 	source: PageContext;
 	createdAt: string;
 };
 
+type AppendUpdatePayload = {
+	version: 2;
+	action: 'append-update';
+	taskFolder: string;
+	taskQuery: string;
+	updateText: string;
+	source: PageContext;
+	createdAt: string;
+};
+
+type ProtocolPayload = CreateTaskPayload | AppendUpdatePayload;
+
 let settings: TaskClipperSettings;
+let mode: PopupMode = 'create';
 let pageContext: PageContext = { title: '', url: '' };
 
+const createTab = document.getElementById('create-tab') as HTMLButtonElement;
+const updateTab = document.getElementById('update-tab') as HTMLButtonElement;
+const createPanel = document.getElementById('create-panel') as HTMLElement;
+const updatePanel = document.getElementById('update-panel') as HTMLElement;
 const taskTitle = document.getElementById('task-title') as HTMLInputElement;
 const taskDetails = document.getElementById('task-details') as HTMLTextAreaElement;
+const updateTaskQuery = document.getElementById('update-task-query') as HTMLInputElement;
+const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
 const statusSelect = document.getElementById('status-select') as HTMLSelectElement;
 const projectSelect = document.getElementById('project-select') as HTMLSelectElement;
 const tagsField = document.getElementById('tags-field') as HTMLInputElement;
@@ -43,27 +71,51 @@ async function init(): Promise<void> {
 	settings = await loadTaskClipperSettings();
 	const initial = await getInitialPageContext();
 	pageContext = { title: initial.title, url: initial.url };
+	mode = initial.mode || 'create';
 
-	taskDetails.value = initial.selection || initial.title || '';
-	taskTitle.value = firstLine(initial.selection) || initial.title || '';
+	const initialText = initial.selection || initial.title || '';
+	taskDetails.value = initialText;
+	taskTitle.value = firstLine(initialText) || initial.title || '';
+	updateText.value = initial.selection || '';
 	tagsField.value = 'task';
 
 	renderSelectors();
 	bindEvents();
-	renderPreview();
-	taskTitle.focus();
+	setMode(mode);
+	(mode === 'update' ? updateTaskQuery : taskTitle).focus();
 }
 
 function bindEvents(): void {
 	document.getElementById('open-settings')?.addEventListener('click', () => {
 		browser.runtime.openOptionsPage();
 	});
-	saveButton.addEventListener('click', createTask);
+	createTab.addEventListener('click', () => setMode('create'));
+	updateTab.addEventListener('click', () => setMode('update'));
+	saveButton.addEventListener('click', submit);
 
-	for (const element of [taskTitle, taskDetails, statusSelect, projectSelect, tagsField, includeSource]) {
+	for (const element of [
+		taskTitle,
+		taskDetails,
+		updateTaskQuery,
+		updateText,
+		statusSelect,
+		projectSelect,
+		tagsField,
+		includeSource,
+	]) {
 		element.addEventListener('input', renderPreview);
 		element.addEventListener('change', renderPreview);
 	}
+}
+
+function setMode(nextMode: PopupMode): void {
+	mode = nextMode;
+	createTab.classList.toggle('active', mode === 'create');
+	updateTab.classList.toggle('active', mode === 'update');
+	createPanel.classList.toggle('is-hidden', mode !== 'create');
+	updatePanel.classList.toggle('is-hidden', mode !== 'update');
+	saveButton.textContent = mode === 'create' ? 'Create Task' : 'Add Update';
+	renderPreview();
 }
 
 function renderSelectors(): void {
@@ -98,7 +150,14 @@ function renderSelectors(): void {
 }
 
 function renderPreview(): void {
-	const content = getTaskContent();
+	if (mode === 'update') {
+		const block = buildUpdateBlock(updateText.value, sourceContext());
+		preview.textContent = block || '(no update text yet)';
+		taskCount.textContent = updateTaskQuery.value.trim() ? '1 update' : 'Choose task';
+		return;
+	}
+
+	const content = getCreateTaskContent();
 	preview.textContent = content || '(no task text yet)';
 	const count = buildTaskLines(
 		taskDetails.value || taskTitle.value,
@@ -110,26 +169,64 @@ function renderPreview(): void {
 	taskCount.textContent = `${count || 0} task${count === 1 ? '' : 's'}`;
 }
 
+async function submit(): Promise<void> {
+	if (mode === 'update') return appendUpdate();
+	return createTask();
+}
+
 async function createTask(): Promise<void> {
-	const content = getTaskContent();
-	if (!content.trim()) return setNotice('Add task text first.', true);
+	const title = taskTitle.value.trim() || firstLine(taskDetails.value);
+	const details = taskDetails.value.trim();
+	if (!title && !details) return setNotice('Add task text first.', true);
 
 	settings.defaultStatus = statusSelect.value || settings.defaultStatus;
 	settings.defaultProject = projectSelect.value || '';
 	settings = await saveTaskClipperSettings(settings);
 
-	const payload: ProtocolPayload = {
+	const payload: CreateTaskPayload = {
 		version: 2,
-		destinationFile: settings.destinationFile,
-		content,
+		action: 'create-task-note',
+		taskFolder: settings.taskFolder,
+		indexFile: settings.destinationFile,
+		title: title || 'Clipped task',
+		details,
+		status: statusSelect.value,
+		project: projectSelect.value,
+		tags: normalizeTags(tagsField.value),
 		source: sourceContext(),
 		createdAt: new Date().toISOString(),
 	};
 
+	await sendPayload(payload, 'Task note sent to Obsidian.');
+}
+
+async function appendUpdate(): Promise<void> {
+	const taskQuery = updateTaskQuery.value.trim();
+	const text = updateText.value.trim();
+	if (!taskQuery) return setNotice('Enter the task title or filename to update.', true);
+	if (!text) return setNotice('Add update text first.', true);
+
+	const payload: AppendUpdatePayload = {
+		version: 2,
+		action: 'append-update',
+		taskFolder: settings.taskFolder,
+		taskQuery,
+		updateText: text,
+		source: sourceContext(),
+		createdAt: new Date().toISOString(),
+	};
+
+	await sendPayload(payload, 'Update sent to Obsidian.');
+}
+
+async function sendPayload(payload: ProtocolPayload, successMessage: string): Promise<void> {
 	const url = buildObsidianUrl(payload, settings.vaultName);
 	if (url.length > MAX_OBSIDIAN_URL_LENGTH) {
-		await navigator.clipboard.writeText(content);
-		return setNotice('Selection is too long for an Obsidian URL. Task lines copied instead.', true);
+		const fallbackText = payload.action === 'append-update'
+			? buildUpdateBlock(payload.updateText, payload.source, new Date(payload.createdAt))
+			: getCreateTaskContent();
+		await navigator.clipboard.writeText(fallbackText);
+		return setNotice('Selection is too long for an Obsidian URL. Content copied instead.', true);
 	}
 
 	setNotice('Opening Obsidian...');
@@ -142,11 +239,11 @@ async function createTask(): Promise<void> {
 		throw new Error(response?.error || 'Could not open Obsidian.');
 	}
 
-	setNotice('Sent to Obsidian.');
+	setNotice(successMessage);
 	setTimeout(() => window.close(), 700);
 }
 
-function getTaskContent(): string {
+function getCreateTaskContent(): string {
 	return buildObsidianTaskContent(
 		taskDetails.value || taskTitle.value,
 		statusSelect.value,
@@ -197,7 +294,10 @@ function firstLine(value: string): string {
 		.find(Boolean) || '';
 }
 
-type InitialPageContext = PageContext & { selection: string };
+type InitialPageContext = PageContext & {
+	selection: string;
+	mode?: PopupMode;
+};
 
 async function getInitialPageContext(): Promise<InitialPageContext> {
 	const pending = await takePendingContext();
@@ -206,6 +306,7 @@ async function getInitialPageContext(): Promise<InitialPageContext> {
 		selection: pending.selection || active.selection,
 		title: pending.title || active.title,
 		url: pending.url || active.url,
+		mode: pending.mode || 'create',
 	};
 }
 
@@ -214,19 +315,20 @@ async function takePendingContext(): Promise<InitialPageContext> {
 	await browser.storage.local.remove(PENDING_CONTEXT_KEY);
 	const pending = result[PENDING_CONTEXT_KEY];
 	if (!pending || !pending.createdAt || Date.now() - pending.createdAt > PENDING_MAX_AGE_MS) {
-		return { selection: '', title: '', url: '' };
+		return { selection: '', title: '', url: '', mode: 'create' };
 	}
 	return {
 		selection: pending.selection || '',
 		title: pending.title || '',
 		url: pending.url || '',
+		mode: pending.mode || 'create',
 	};
 }
 
 async function readActivePageContext(): Promise<InitialPageContext> {
 	const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 	const tab = tabs[0];
-	if (!tab?.id) return { selection: '', title: '', url: '' };
+	if (!tab?.id) return { selection: '', title: '', url: '', mode: 'create' };
 
 	try {
 		const results = await browser.scripting.executeScript({
@@ -242,12 +344,14 @@ async function readActivePageContext(): Promise<InitialPageContext> {
 			selection: result?.selection || '',
 			title: result?.title || tab.title || '',
 			url: result?.url || tab.url || '',
+			mode: 'create',
 		};
 	} catch {
 		return {
 			selection: '',
 			title: tab.title || '',
 			url: tab.url || '',
+			mode: 'create',
 		};
 	}
 }

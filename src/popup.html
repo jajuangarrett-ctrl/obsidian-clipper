@@ -16,6 +16,11 @@
 				<button id="open-settings" class="icon-button" type="button" title="Settings">Settings</button>
 			</header>
 
+			<nav class="mode-tabs" aria-label="Task clipper mode">
+				<button id="create-tab" class="active" type="button">Create Task</button>
+				<button id="update-tab" type="button">Add Update</button>
+			</nav>
+
 			<section id="create-panel" class="mode-panel">
 				<section class="field-group">
 					<label for="task-title">Task title</label>
@@ -42,6 +47,18 @@
 					<label for="tags-field">Tags</label>
 					<input id="tags-field" type="text" value="task" list="tag-options" autocomplete="off">
 					<datalist id="tag-options"></datalist>
+				</section>
+			</section>
+
+			<section id="update-panel" class="mode-panel is-hidden">
+				<section class="field-group">
+					<label for="update-task-query">Task to update</label>
+					<input id="update-task-query" type="text" placeholder="Type task title or note filename" autocomplete="off">
+				</section>
+
+				<section class="field-group">
+					<label for="update-text">Update text</label>
+					<textarea id="update-text" rows="7" placeholder="Selected text will appear here."></textarea>
 				</section>
 			</section>
 

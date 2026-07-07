@@ -62,13 +62,36 @@ export function buildObsidianTaskContent(
 		.join('\n');
 }
 
-function buildSourceLine(context: PageContext): string {
+export function buildUpdateBlock(
+	updateText: string,
+	context: PageContext,
+	now: Date = new Date(),
+): string {
+	const cleanUpdate = updateText.trim();
+	const source = buildSourceLine(context);
+	return [
+		`### ${formatLocalDateTime(now)}`,
+		cleanUpdate,
+		source,
+	].filter(Boolean).join('\n\n');
+}
+
+export function buildSourceLine(context: PageContext): string {
 	const title = context.title.trim();
 	const url = context.url.trim();
 	if (title && url) return `Source: [${escapeMarkdownLinkText(title)}](${url})`;
 	if (url) return `Source: ${url}`;
 	if (title) return `Source: ${title}`;
 	return '';
+}
+
+function formatLocalDateTime(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
 function escapeMarkdownLinkText(value: string): string {

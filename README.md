@@ -2,7 +2,7 @@
 
 Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) for Franklin Garrett's FJG task workflow.
 
-Version 2 does not use the TaskNotes HTTP API. The Chrome extension sends selected text through an Obsidian protocol URL, and the companion Obsidian plugin appends plain Markdown tasks to the configured vault note.
+Version 2 does not use the TaskNotes HTTP API. The Chrome extension sends selected text through an Obsidian protocol URL, and the companion Obsidian plugin creates or updates Markdown task notes directly in the vault.
 
 Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User Guide.md](docs/FJG%20Obsidian%20Task%20Clipper%20User%20Guide.md).
 
@@ -10,7 +10,9 @@ Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User
 
 - Captures selected Chrome text or the current page title.
 - Lets Franklin choose status, project, and tags in the extension popup.
-- Appends plain Obsidian task lines to `08 Tasks/Tasks.md` by default.
+- Creates one Markdown note per task in `TaskNotes/Tasks/`.
+- Appends a linked checkbox item to `08 Tasks/Tasks.md` as a lightweight index.
+- Adds selected Chrome text as an update under `## Updates` in an existing task note.
 - Keeps every task compatible with Obsidian task plugins by including `#task`.
 - Uses status tags such as `#Inbox`, `#DoFirst`, and `#Waiting`.
 
@@ -23,17 +25,24 @@ Default FJG statuses:
 - `Waiting`
 - `On-Hold`
 
-Example output:
+Example task note:
 
 ```md
+# Review the budget packet
+
 - [ ] Review the budget packet PJ: Basic Needs #task #DoSoon
-  - Source: [Budget page](https://example.com/budget)
+
+## Source
+
+Source: [Budget page](https://example.com/budget)
+
+## Updates
 ```
 
 ## Architecture
 
 ```text
-Chrome extension -> obsidian://fjg-task-clipper -> FJG Task Clipper Bridge -> Markdown task page
+Chrome extension -> obsidian://fjg-task-clipper -> FJG Task Clipper Bridge -> TaskNotes/Tasks/*.md
 ```
 
 This avoids localhost, CORS, Chrome Local Network Access prompts, bearer tokens, and TaskNotes API behavior.
@@ -85,7 +94,8 @@ Open the extension options page.
 Destination:
 
 - Vault name: blank to use the currently open Obsidian vault, or `FJG Vault` if explicit routing is needed.
-- Task page: `08 Tasks/Tasks`
+- Task index page: `08 Tasks/Tasks`
+- Task notes folder: `TaskNotes/Tasks`
 
 Projects:
 
@@ -105,6 +115,13 @@ Statuses:
 3. Edit the task text if needed.
 4. Choose status, project, and tags.
 5. Click `Create Task`.
+
+Add an update:
+
+1. Select update text on a web page.
+2. Right-click and choose `Add selection as task update`, or open the extension and choose `Add Update`.
+3. Type enough of the task title or task note filename to identify one task.
+4. Click `Add Update`.
 
 ## Verification
 

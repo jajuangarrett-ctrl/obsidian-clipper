@@ -22,6 +22,7 @@ async function init(): Promise<void> {
 async function populateForm(): Promise<void> {
 	(document.getElementById('vault-name') as HTMLInputElement).value = settings.vaultName;
 	(document.getElementById('destination-file') as HTMLInputElement).value = settings.destinationFile;
+	(document.getElementById('task-folder') as HTMLInputElement).value = settings.taskFolder;
 	renderProjects();
 	renderTags();
 	renderStatuses();
@@ -38,6 +39,7 @@ function bindEvents(): void {
 async function saveForm(): Promise<void> {
 	settings.vaultName = (document.getElementById('vault-name') as HTMLInputElement).value;
 	settings.destinationFile = (document.getElementById('destination-file') as HTMLInputElement).value;
+	settings.taskFolder = (document.getElementById('task-folder') as HTMLInputElement).value;
 	settings = await saveTaskClipperSettings(settings);
 	await populateForm();
 	setNotice('Settings saved.');

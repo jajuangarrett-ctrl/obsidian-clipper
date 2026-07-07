@@ -23,4 +23,9 @@ describe('task clipper settings', () => {
 	test('normalizes the destination file without an md extension', () => {
 		expect(normalizeSettings({ destinationFile: '/08 Tasks/Tasks.md' }).destinationFile).toBe('08 Tasks/Tasks');
 	});
+
+	test('defaults to the TaskNotes task folder for individual task notes', () => {
+		expect(normalizeSettings(undefined).taskFolder).toBe('TaskNotes/Tasks');
+		expect(normalizeSettings({ taskFolder: '/TaskNotes/Tasks.md' }).taskFolder).toBe('TaskNotes/Tasks');
+	});
 });
