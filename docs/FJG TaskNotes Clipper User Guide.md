@@ -11,7 +11,9 @@ Created tasks keep the `#task` tag so they work with TaskNotes and related task-
 
 ## One-Time Setup
 
-Before the clipper can create or update TaskNotes tasks, Obsidian must be running on the Mac and TaskNotes must have its local HTTP API enabled.
+Before the clipper can create or update TaskNotes tasks, Obsidian must be running on the same Mac where you are using Chrome, and TaskNotes must have its local HTTP API enabled. With the default `http://localhost:8080` setting, `localhost` means the current Mac, not automatically the always-on Mac.
+
+If you are clipping from the always-on Mac, run Obsidian there. If you are clipping from your main Mac, run Obsidian there and let Obsidian Sync move the new task notes to your other devices.
 
 ![TaskNotes API and fallback settings](screenshots/tasknotes-settings.png)
 
@@ -20,7 +22,7 @@ Before the clipper can create or update TaskNotes tasks, Obsidian must be runnin
 3. Enable the HTTP API.
 4. Keep the default TaskNotes API port unless you intentionally changed it.
 5. In Chrome, right-click the FJG TaskNotes Clipper extension and open `Options`.
-6. Set `API base URL` to `http://localhost:8080`, or use the port configured in TaskNotes.
+6. Set `API base URL` to `http://localhost:8080`, or use the port configured in TaskNotes on the Mac where Chrome is running.
 7. If TaskNotes uses an API token, paste it into `Bearer token`.
 8. Click `Test connection`.
 9. Click `Sync projects/statuses` to pull your TaskNotes projects, statuses, and tags into the clipper.
@@ -225,4 +227,3 @@ If an existing task does not appear in `Add Update`, make sure the task is activ
 If a status clips but does not show correctly in TaskNotes, check that the status value in the clipper matches the TaskNotes status value exactly.
 
 If no text was selected before opening the popup, you can still type the task title, details, or update text manually.
-

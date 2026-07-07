@@ -39,7 +39,7 @@ The default extension API URL is:
 http://localhost:8080
 ```
 
-TaskNotes API is desktop-only, so Obsidian must be running on the Mac for create/update mode to work.
+TaskNotes API is desktop-only, so Obsidian must be running on the same Mac where Chrome is running for create/update mode to work. With the default `http://localhost:8080` setting, `localhost` means the current Mac, not automatically the always-on Mac.
 
 ## Chrome Setup
 
