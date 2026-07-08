@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildObsidianTaskContent, buildUpdateBlock } from './format';
+import { buildObsidianTaskContent, buildSourceLine, buildUpdateBlock } from './format';
 
 const STATUSES = [
 	{ id: 'Inbox', label: 'Inbox' },
@@ -54,5 +54,15 @@ describe('task clipper formatting', () => {
 		);
 
 		expect(result).toBe('### 2026-07-07 09:05\n\nFresh update\n\nSource: [Agenda](https://example.com/agenda)');
+	});
+
+	test('uses a plain email subject instead of an email link', () => {
+		const result = buildSourceLine({
+			title: 'Pedro Beltran Garcia is cleared to work',
+			url: 'https://outlook.cloud.microsoft/mail/inbox/id/abc',
+			sourceKind: 'email',
+		});
+
+		expect(result).toBe('Email subject: Pedro Beltran Garcia is cleared to work');
 	});
 });

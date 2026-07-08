@@ -11,6 +11,7 @@ export type BuiltTask = {
 export type PageContext = {
 	title: string;
 	url: string;
+	sourceKind?: 'web' | 'email';
 };
 
 export function splitTaskText(input: string): string[] {
@@ -79,10 +80,30 @@ export function buildUpdateBlock(
 export function buildSourceLine(context: PageContext): string {
 	const title = context.title.trim();
 	const url = context.url.trim();
+	if (context.sourceKind === 'email' || isEmailUrl(url)) {
+		return title ? `Email subject: ${title}` : 'Email source: subject unavailable';
+	}
 	if (title && url) return `Source: [${escapeMarkdownLinkText(title)}](${url})`;
 	if (url) return `Source: ${url}`;
 	if (title) return `Source: ${title}`;
 	return '';
+}
+
+function isEmailUrl(url: string): boolean {
+	if (!url) return false;
+	try {
+		const parsed = new URL(url);
+		const host = parsed.hostname.toLowerCase();
+		return (
+			host.includes('outlook.') ||
+			host.includes('office.com') ||
+			host.includes('office365.com') ||
+			host.includes('mail.google.com') ||
+			(host.includes('cloud.microsoft') && parsed.pathname.includes('/mail'))
+		);
+	} catch {
+		return false;
+	}
 }
 
 function formatLocalDateTime(date: Date): string {

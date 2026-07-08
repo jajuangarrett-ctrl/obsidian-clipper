@@ -278,6 +278,20 @@ Selected update text from Chrome.
 Source: [Update page](https://example.com/update)
 ```
 
+## Email Sources
+
+When the source page is an email in Outlook or Gmail, the clipper saves the email subject as plain text instead of saving a clickable email URL.
+
+Example:
+
+```md
+## Source
+
+Email subject: Pedro Beltran Garcia is cleared to work
+```
+
+This is intentional because browser email URLs often reopen the mailbox shell instead of returning to the exact message.
+
 ## Verify It Worked
 
 After clicking `Create Task`, open:

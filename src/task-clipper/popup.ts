@@ -45,7 +45,7 @@ type ProtocolPayload = CreateTaskPayload | AppendUpdatePayload;
 
 let settings: TaskClipperSettings;
 let mode: PopupMode = 'create';
-let pageContext: PageContext = { title: '', url: '' };
+let pageContext: PageContext = { title: '', url: '', sourceKind: 'web' };
 
 const createTab = document.getElementById('create-tab') as HTMLButtonElement;
 const updateTab = document.getElementById('update-tab') as HTMLButtonElement;
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', init);
 async function init(): Promise<void> {
 	settings = await loadTaskClipperSettings();
 	const initial = await getInitialPageContext();
-	pageContext = { title: initial.title, url: initial.url };
+	pageContext = { title: initial.title, url: initial.url, sourceKind: initial.sourceKind };
 	mode = initial.mode || 'create';
 
 	const initialText = initial.selection || initial.title || '';
@@ -306,6 +306,7 @@ async function getInitialPageContext(): Promise<InitialPageContext> {
 		selection: pending.selection || active.selection,
 		title: pending.title || active.title,
 		url: pending.url || active.url,
+		sourceKind: pending.sourceKind || active.sourceKind || 'web',
 		mode: pending.mode || 'create',
 	};
 }
@@ -315,12 +316,13 @@ async function takePendingContext(): Promise<InitialPageContext> {
 	await browser.storage.local.remove(PENDING_CONTEXT_KEY);
 	const pending = result[PENDING_CONTEXT_KEY];
 	if (!pending || !pending.createdAt || Date.now() - pending.createdAt > PENDING_MAX_AGE_MS) {
-		return { selection: '', title: '', url: '', mode: 'create' };
+		return { selection: '', title: '', url: '', sourceKind: 'web', mode: 'create' };
 	}
 	return {
 		selection: pending.selection || '',
 		title: pending.title || '',
 		url: pending.url || '',
+		sourceKind: pending.sourceKind || 'web',
 		mode: pending.mode || 'create',
 	};
 }
@@ -328,22 +330,81 @@ async function takePendingContext(): Promise<InitialPageContext> {
 async function readActivePageContext(): Promise<InitialPageContext> {
 	const tabs = await browser.tabs.query({ active: true, currentWindow: true });
 	const tab = tabs[0];
-	if (!tab?.id) return { selection: '', title: '', url: '', mode: 'create' };
+	if (!tab?.id) return { selection: '', title: '', url: '', sourceKind: 'web', mode: 'create' };
 
 	try {
 		const results = await browser.scripting.executeScript({
 			target: { tabId: tab.id },
-			func: () => ({
-				selection: String(window.getSelection?.()?.toString() || ''),
-				title: document.title || '',
-				url: location.href || '',
-			}),
+			func: () => {
+				const url = location.href || '';
+				const isEmail = isEmailPage(url);
+				return {
+					selection: String(window.getSelection?.()?.toString() || ''),
+					title: isEmail ? extractEmailSubject() || document.title || '' : document.title || '',
+					url,
+					sourceKind: isEmail ? 'email' : 'web',
+				};
+
+				function isEmailPage(value: string): boolean {
+					try {
+						const parsed = new URL(value);
+						const host = parsed.hostname.toLowerCase();
+						return (
+							host.includes('outlook.') ||
+							host.includes('office.com') ||
+							host.includes('office365.com') ||
+							host.includes('mail.google.com') ||
+							(host.includes('cloud.microsoft') && parsed.pathname.includes('/mail'))
+						);
+					} catch {
+						return false;
+					}
+				}
+
+				function extractEmailSubject(): string {
+					const selectors = [
+						'[data-testid="message-subject"]',
+						'[data-testid="conversation-subject"]',
+						'[aria-label^="Subject"]',
+						'[aria-label^="subject"]',
+						'[role="heading"][aria-level="1"]',
+						'[role="heading"][aria-level="2"]',
+						'h1',
+						'h2',
+					];
+					for (const selector of selectors) {
+						const nodes = Array.from(document.querySelectorAll(selector));
+						for (const node of nodes) {
+							const text = cleanSubject(
+								(node.textContent || '') ||
+								(node.getAttribute('aria-label') || ''),
+							);
+							if (looksLikeSubject(text)) return text;
+						}
+					}
+					return cleanSubject(document.title || '');
+				}
+
+				function cleanSubject(value: string): string {
+					return String(value || '')
+						.replace(/^subject\\s*:?\\s*/i, '')
+						.replace(/\\s+-\\s+(Outlook|Microsoft Outlook|Mail)$/i, '')
+						.replace(/\\s+/g, ' ')
+						.trim();
+				}
+
+				function looksLikeSubject(value: string): boolean {
+					if (!value || value.length < 3 || value.length > 240) return false;
+					return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane)$/i.test(value);
+				}
+			},
 		});
 		const result = results[0]?.result as InitialPageContext | undefined;
 		return {
 			selection: result?.selection || '',
 			title: result?.title || tab.title || '',
 			url: result?.url || tab.url || '',
+			sourceKind: result?.sourceKind || 'web',
 			mode: 'create',
 		};
 	} catch {
@@ -351,8 +412,25 @@ async function readActivePageContext(): Promise<InitialPageContext> {
 			selection: '',
 			title: tab.title || '',
 			url: tab.url || '',
+			sourceKind: isEmailUrl(tab.url || '') ? 'email' : 'web',
 			mode: 'create',
 		};
+	}
+}
+
+function isEmailUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		const host = parsed.hostname.toLowerCase();
+		return (
+			host.includes('outlook.') ||
+			host.includes('office.com') ||
+			host.includes('office365.com') ||
+			host.includes('mail.google.com') ||
+			(host.includes('cloud.microsoft') && parsed.pathname.includes('/mail'))
+		);
+	} catch {
+		return false;
 	}
 }
 

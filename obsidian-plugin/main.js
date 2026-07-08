@@ -370,6 +370,9 @@ function yamlList(key, values) {
 function buildSourceLine(source) {
   const title = String(source.title || "").trim();
   const url = String(source.url || "").trim();
+  if (source.sourceKind === "email" || isEmailUrl(url)) {
+    return title ? `Email subject: ${title}` : "Email source: subject unavailable";
+  }
   if (title && url) return `Source: [${escapeMarkdownLinkText(title)}](${url})`;
   if (url) return `Source: ${url}`;
   if (title) return `Source: ${title}`;
@@ -380,7 +383,25 @@ function normalizeSource(source) {
   return {
     title: String((source && source.title) || ""),
     url: String((source && source.url) || ""),
+    sourceKind: (source && source.sourceKind) === "email" ? "email" : "web",
   };
+}
+
+function isEmailUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host.includes("outlook.") ||
+      host.includes("office.com") ||
+      host.includes("office365.com") ||
+      host.includes("mail.google.com") ||
+      (host.includes("cloud.microsoft") && parsed.pathname.includes("/mail"))
+    );
+  } catch {
+    return false;
+  }
 }
 
 function normalizeTags(tags, status) {
