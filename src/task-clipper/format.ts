@@ -81,12 +81,29 @@ export function buildSourceLine(context: PageContext): string {
 	const title = context.title.trim();
 	const url = context.url.trim();
 	if (context.sourceKind === 'email' || isEmailUrl(url)) {
-		return title ? `Email subject: ${title}` : 'Email source: subject unavailable';
+		const subject = cleanEmailSubject(title);
+		return subject ? `Email subject: ${subject}` : 'Email source: subject unavailable';
 	}
 	if (title && url) return `Source: [${escapeMarkdownLinkText(title)}](${url})`;
 	if (url) return `Source: ${url}`;
 	if (title) return `Source: ${title}`;
 	return '';
+}
+
+function cleanEmailSubject(value: string): string {
+	const clean = String(value || '')
+		.replace(/^subject\s*:?\s*/i, '')
+		.replace(/\s*Summarize this email\s*$/i, '')
+		.replace(/\s+-\s+[^-]+?\s+-\s+Outlook$/i, '')
+		.replace(/\s+-\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+	return looksLikeEmailSubject(clean) ? clean : '';
+}
+
+function looksLikeEmailSubject(value: string): boolean {
+	if (!value || value.length < 3 || value.length > 240) return false;
+	return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
 }
 
 function isEmailUrl(url: string): boolean {

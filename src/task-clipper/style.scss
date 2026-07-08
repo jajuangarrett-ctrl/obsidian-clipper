@@ -217,14 +217,20 @@ textarea {
 .manage-form,
 .button-row,
 .task-actions,
-.settings-actions {
+.settings-actions,
+.title-row {
 	display: flex;
 	gap: 8px;
 }
 
 .inline-add input,
-.manage-form input {
+.manage-form input,
+.title-row input {
 	min-width: 0;
+}
+
+.title-row button {
+	flex: 0 0 auto;
 }
 
 .status-form {
@@ -307,6 +313,10 @@ pre {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+}
+
+#email-source-group {
+	margin-top: -4px;
 }
 
 .checkbox-row input {

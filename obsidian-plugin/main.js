@@ -371,12 +371,29 @@ function buildSourceLine(source) {
   const title = String(source.title || "").trim();
   const url = String(source.url || "").trim();
   if (source.sourceKind === "email" || isEmailUrl(url)) {
-    return title ? `Email subject: ${title}` : "Email source: subject unavailable";
+    const subject = cleanEmailSubject(title);
+    return subject ? `Email subject: ${subject}` : "Email source: subject unavailable";
   }
   if (title && url) return `Source: [${escapeMarkdownLinkText(title)}](${url})`;
   if (url) return `Source: ${url}`;
   if (title) return `Source: ${title}`;
   return "";
+}
+
+function cleanEmailSubject(value) {
+  const clean = String(value || "")
+    .replace(/^subject\s*:?\s*/i, "")
+    .replace(/\s*Summarize this email\s*$/i, "")
+    .replace(/\s+-\s+[^-]+?\s+-\s+Outlook$/i, "")
+    .replace(/\s+-\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return looksLikeEmailSubject(clean) ? clean : "";
+}
+
+function looksLikeEmailSubject(value) {
+  if (!value || value.length < 3 || value.length > 240) return false;
+  return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
 }
 
 function normalizeSource(source) {

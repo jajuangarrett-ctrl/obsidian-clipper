@@ -7,6 +7,7 @@ import {
 } from './format';
 import {
 	TaskClipperSettings,
+	loadOpenAiApiKey,
 	loadTaskClipperSettings,
 	saveTaskClipperSettings,
 } from './storage';
@@ -52,6 +53,7 @@ const updateTab = document.getElementById('update-tab') as HTMLButtonElement;
 const createPanel = document.getElementById('create-panel') as HTMLElement;
 const updatePanel = document.getElementById('update-panel') as HTMLElement;
 const taskTitle = document.getElementById('task-title') as HTMLInputElement;
+const generateTitleButton = document.getElementById('generate-title') as HTMLButtonElement;
 const taskDetails = document.getElementById('task-details') as HTMLTextAreaElement;
 const updateTaskQuery = document.getElementById('update-task-query') as HTMLInputElement;
 const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
@@ -60,6 +62,8 @@ const projectSelect = document.getElementById('project-select') as HTMLSelectEle
 const tagsField = document.getElementById('tags-field') as HTMLInputElement;
 const tagOptions = document.getElementById('tag-options') as HTMLDataListElement;
 const includeSource = document.getElementById('include-source') as HTMLInputElement;
+const emailSourceGroup = document.getElementById('email-source-group') as HTMLElement;
+const emailSubject = document.getElementById('email-subject') as HTMLInputElement;
 const preview = document.getElementById('task-preview') as HTMLElement;
 const taskCount = document.getElementById('task-count') as HTMLElement;
 const notice = document.getElementById('notice') as HTMLElement;
@@ -77,6 +81,7 @@ async function init(): Promise<void> {
 	taskDetails.value = initialText;
 	taskTitle.value = firstLine(initialText) || initial.title || '';
 	updateText.value = initial.selection || '';
+	emailSubject.value = pageContext.sourceKind === 'email' ? cleanEmailSubject(pageContext.title) : '';
 	tagsField.value = 'task';
 
 	renderSelectors();
@@ -92,6 +97,7 @@ function bindEvents(): void {
 	createTab.addEventListener('click', () => setMode('create'));
 	updateTab.addEventListener('click', () => setMode('update'));
 	saveButton.addEventListener('click', submit);
+	generateTitleButton.addEventListener('click', generateTitle);
 
 	for (const element of [
 		taskTitle,
@@ -102,6 +108,7 @@ function bindEvents(): void {
 		projectSelect,
 		tagsField,
 		includeSource,
+		emailSubject,
 	]) {
 		element.addEventListener('input', renderPreview);
 		element.addEventListener('change', renderPreview);
@@ -115,6 +122,7 @@ function setMode(nextMode: PopupMode): void {
 	createPanel.classList.toggle('is-hidden', mode !== 'create');
 	updatePanel.classList.toggle('is-hidden', mode !== 'update');
 	saveButton.textContent = mode === 'create' ? 'Create Task' : 'Add Update';
+	generateTitleButton.disabled = mode !== 'create';
 	renderPreview();
 }
 
@@ -139,7 +147,7 @@ function renderSelectors(): void {
 		option.textContent = project;
 		projectSelect.appendChild(option);
 	}
-	projectSelect.value = settings.defaultProject;
+	projectSelect.value = '';
 
 	tagOptions.textContent = '';
 	for (const tag of settings.tags) {
@@ -150,6 +158,8 @@ function renderSelectors(): void {
 }
 
 function renderPreview(): void {
+	renderSourceControls();
+
 	if (mode === 'update') {
 		const block = buildUpdateBlock(updateText.value, sourceContext());
 		preview.textContent = block || '(no update text yet)';
@@ -169,6 +179,11 @@ function renderPreview(): void {
 	taskCount.textContent = `${count || 0} task${count === 1 ? '' : 's'}`;
 }
 
+function renderSourceControls(): void {
+	const showEmailSubject = includeSource.checked && pageContext.sourceKind === 'email';
+	emailSourceGroup.classList.toggle('is-hidden', !showEmailSubject);
+}
+
 async function submit(): Promise<void> {
 	if (mode === 'update') return appendUpdate();
 	return createTask();
@@ -180,7 +195,6 @@ async function createTask(): Promise<void> {
 	if (!title && !details) return setNotice('Add task text first.', true);
 
 	settings.defaultStatus = statusSelect.value || settings.defaultStatus;
-	settings.defaultProject = projectSelect.value || '';
 	settings = await saveTaskClipperSettings(settings);
 
 	const payload: CreateTaskPayload = {
@@ -198,6 +212,43 @@ async function createTask(): Promise<void> {
 	};
 
 	await sendPayload(payload, 'Task note sent to Obsidian.');
+}
+
+async function generateTitle(): Promise<void> {
+	const sourceText = taskDetails.value.trim() || taskTitle.value.trim();
+	if (!sourceText) return setNotice('Add task text first.', true);
+
+	const apiKey = await loadOpenAiApiKey();
+	if (!apiKey) {
+		setNotice('Add an OpenAI API key in Options first.', true);
+		browser.runtime.openOptionsPage();
+		return;
+	}
+
+	const originalText = generateTitleButton.textContent;
+	generateTitleButton.disabled = true;
+	generateTitleButton.textContent = 'Generating...';
+	setNotice('Generating title...');
+
+	try {
+		const suggested = await requestAiTitle({
+			apiKey,
+			model: settings.openAiModel,
+			taskText: sourceText,
+			sourceTitle: sourceContext().title,
+			project: projectSelect.value,
+			status: statusSelect.value,
+		});
+		taskTitle.value = suggested;
+		renderPreview();
+		setNotice('Title generated.');
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		setNotice(`Title generation failed: ${message}`, true);
+	} finally {
+		generateTitleButton.disabled = mode !== 'create';
+		generateTitleButton.textContent = originalText || 'Generate';
+	}
 }
 
 async function appendUpdate(): Promise<void> {
@@ -255,7 +306,90 @@ function getCreateTaskContent(): string {
 }
 
 function sourceContext(): PageContext {
-	return includeSource.checked ? pageContext : { title: '', url: '' };
+	if (!includeSource.checked) return { title: '', url: '' };
+	if (pageContext.sourceKind === 'email') {
+		return {
+			...pageContext,
+			title: cleanEmailSubject(emailSubject.value || pageContext.title),
+			sourceKind: 'email',
+		};
+	}
+	return pageContext;
+}
+
+async function requestAiTitle(input: {
+	apiKey: string;
+	model: string;
+	taskText: string;
+	sourceTitle: string;
+	project: string;
+	status: string;
+}): Promise<string> {
+	const prompt = [
+		'Create one concise action-oriented task title.',
+		'Rules:',
+		'- 6 to 12 words when possible.',
+		'- Use sentence case.',
+		'- No trailing period.',
+		'- Do not include hashtags, status labels, or project prefixes.',
+		'- Preserve important names, programs, and dates.',
+		'- Return only the title text.',
+		'',
+		`Status: ${input.status || 'none'}`,
+		`Project: ${input.project || 'none'}`,
+		`Source title or email subject: ${input.sourceTitle || 'none'}`,
+		'Task text:',
+		input.taskText.slice(0, 4000),
+	].join('\n');
+
+	const response = await fetch('https://api.openai.com/v1/responses', {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${input.apiKey}`,
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			model: input.model || 'gpt-4.1-mini',
+			input: prompt,
+			max_output_tokens: 40,
+		}),
+	});
+
+	const data = await response.json().catch(() => ({}));
+	if (!response.ok) {
+		const errorMessage = typeof data?.error?.message === 'string'
+			? data.error.message
+			: `OpenAI request failed with HTTP ${response.status}`;
+		throw new Error(errorMessage);
+	}
+
+	const title = cleanGeneratedTitle(extractResponseText(data));
+	if (!title) throw new Error('OpenAI returned an empty title.');
+	return title;
+}
+
+function extractResponseText(data: unknown): string {
+	const record = data as {
+		output_text?: string;
+		output?: Array<{ content?: Array<{ text?: string; type?: string }> }>;
+	};
+	if (typeof record.output_text === 'string') return record.output_text;
+	for (const item of record.output || []) {
+		for (const content of item.content || []) {
+			if (typeof content.text === 'string') return content.text;
+		}
+	}
+	return '';
+}
+
+function cleanGeneratedTitle(value: string): string {
+	return value
+		.replace(/^["'`]+|["'`]+$/g, '')
+		.replace(/^[-*]\s+/, '')
+		.replace(/\s+/g, ' ')
+		.trim()
+		.replace(/[.。]+$/g, '')
+		.slice(0, 120);
 }
 
 function normalizeTags(value: string): string[] {
@@ -362,6 +496,9 @@ async function readActivePageContext(): Promise<InitialPageContext> {
 				}
 
 				function extractEmailSubject(): string {
+					const titleSubject = cleanSubject(document.title || '');
+					if (looksLikeSubject(titleSubject)) return titleSubject;
+
 					const selectors = [
 						'[data-testid="message-subject"]',
 						'[data-testid="conversation-subject"]',
@@ -388,14 +525,16 @@ async function readActivePageContext(): Promise<InitialPageContext> {
 				function cleanSubject(value: string): string {
 					return String(value || '')
 						.replace(/^subject\\s*:?\\s*/i, '')
-						.replace(/\\s+-\\s+(Outlook|Microsoft Outlook|Mail)$/i, '')
+						.replace(/\\s*Summarize this email\\s*$/i, '')
+						.replace(/\\s+-\\s+[^-]+?\\s+-\\s+Outlook$/i, '')
+						.replace(/\\s+-\\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, '')
 						.replace(/\\s+/g, ' ')
 						.trim();
 				}
 
 				function looksLikeSubject(value: string): boolean {
 					if (!value || value.length < 3 || value.length > 240) return false;
-					return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane)$/i.test(value);
+					return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
 				}
 			},
 		});
@@ -432,6 +571,22 @@ function isEmailUrl(url: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function cleanEmailSubject(value: string): string {
+	const clean = String(value || '')
+		.replace(/^subject\s*:?\s*/i, '')
+		.replace(/\s*Summarize this email\s*$/i, '')
+		.replace(/\s+-\s+[^-]+?\s+-\s+Outlook$/i, '')
+		.replace(/\s+-\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+	return looksLikeEmailSubject(clean) ? clean : '';
+}
+
+function looksLikeEmailSubject(value: string): boolean {
+	if (!value || value.length < 3 || value.length > 240) return false;
+	return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
 }
 
 function setNotice(message: string, isError = false): void {

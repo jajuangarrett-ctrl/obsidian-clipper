@@ -114,6 +114,9 @@ async function readPageContext(tab: browser.Tabs.Tab | undefined, fallbackUrl: s
 				}
 
 				function extractEmailSubject(): string {
+					const titleSubject = cleanSubject(document.title || '');
+					if (looksLikeSubject(titleSubject)) return titleSubject;
+
 					const selectors = [
 						'[data-testid="message-subject"]',
 						'[data-testid="conversation-subject"]',
@@ -140,14 +143,16 @@ async function readPageContext(tab: browser.Tabs.Tab | undefined, fallbackUrl: s
 				function cleanSubject(value: string): string {
 					return String(value || '')
 						.replace(/^subject\s*:?\s*/i, '')
-						.replace(/\s+-\s+(Outlook|Microsoft Outlook|Mail)$/i, '')
+						.replace(/\s*Summarize this email\s*$/i, '')
+						.replace(/\s+-\s+[^-]+?\s+-\s+Outlook$/i, '')
+						.replace(/\s+-\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, '')
 						.replace(/\s+/g, ' ')
 						.trim();
 				}
 
 				function looksLikeSubject(value: string): boolean {
 					if (!value || value.length < 3 || value.length > 240) return false;
-					return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane)$/i.test(value);
+					return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
 				}
 			},
 		});

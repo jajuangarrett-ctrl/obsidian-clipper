@@ -169,6 +169,15 @@ Task notes folder: TaskNotes/Tasks
 
 Leaving the vault name blank tells Obsidian to use the currently open vault. This is usually more reliable than hardcoding `FJG Vault`, especially when Obsidian is already open to the right vault.
 
+Optional AI title settings:
+
+```text
+OpenAI model: gpt-4.1-mini
+OpenAI API key: paste your OpenAI API key
+```
+
+The API key is stored locally in Chrome extension storage. It is only used when you click `Generate` next to the task title.
+
 ## Projects
 
 Projects are stored in the Chrome extension settings.
@@ -181,6 +190,8 @@ To add a project:
 4. Click `Save settings`.
 
 The project appears in the popup's `Project` dropdown. When selected, it is written into the task note frontmatter and index line.
+
+Project choice is per task. Each time the popup opens, it starts at `No project` so a prior clip does not accidentally assign the next task.
 
 ## Statuses
 
@@ -239,15 +250,32 @@ You can add optional tags in extension `Options`. In the popup, the `Tags` field
 2. Click the `FJG Obsidian Task Clipper` icon.
 3. Choose `Create Task`.
 4. Edit the task title and details if needed.
-5. Choose a status.
-6. Choose a project, or leave `No project`.
-7. Adjust tags if needed.
-8. Keep `Include page source` checked if you want the source URL saved.
-9. Click `Create Task`.
+5. Optional: click `Generate` to ask AI for a cleaner task title.
+6. Choose a status.
+7. Choose a project, or leave `No project`.
+8. Adjust tags if needed.
+9. Keep `Include page source` checked if you want the source URL saved.
+10. Click `Create Task`.
 
 Obsidian should open or come forward. A dedicated task note should be created in `TaskNotes/Tasks`, and a linked checkbox should be appended to `08 Tasks/Tasks.md`.
 
 If Chrome asks whether to open Obsidian, choose `Open Obsidian`. That permission prompt is Chrome's external-app safety check for the `obsidian://` handoff.
+
+## Generate A Better Task Title
+
+The popup starts with the first line of the selected text as the task title. If that title is too long or messy, click `Generate`.
+
+`Generate` sends the task text, selected status, selected project, and source title or email subject to OpenAI. It returns one concise title and puts it in the editable `Task title` field.
+
+The generated title is not final until you click `Create Task`. You can edit it first.
+
+If `Generate` says an OpenAI API key is missing:
+
+1. Open extension `Options`.
+2. Paste your OpenAI API key in `OpenAI API key`.
+3. Confirm the model field is set to `gpt-4.1-mini` or another model you want to use.
+4. Click `Save settings`.
+5. Return to the popup and click `Generate` again.
 
 ## Add An Update
 

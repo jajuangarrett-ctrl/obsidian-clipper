@@ -24,7 +24,10 @@
 			<section id="create-panel" class="mode-panel">
 				<section class="field-group">
 					<label for="task-title">Task title</label>
-					<input id="task-title" type="text" autocomplete="off">
+					<div class="title-row">
+						<input id="task-title" type="text" autocomplete="off">
+						<button id="generate-title" class="secondary" type="button">Generate</button>
+					</div>
 				</section>
 
 				<section class="field-group">
@@ -66,6 +69,11 @@
 				<input id="include-source" type="checkbox" checked>
 				<span>Include page source</span>
 			</label>
+
+			<section id="email-source-group" class="field-group is-hidden">
+				<label for="email-subject">Email subject</label>
+				<input id="email-subject" type="text" placeholder="Paste or correct the email subject" autocomplete="off">
+			</section>
 
 			<section class="preview">
 				<div class="preview-header">

@@ -58,11 +58,21 @@ describe('task clipper formatting', () => {
 
 	test('uses a plain email subject instead of an email link', () => {
 		const result = buildSourceLine({
-			title: 'Pedro Beltran Garcia is cleared to work',
+			title: 'Pedro Beltran Garcia is cleared to work - Franklin Garrett - Outlook',
 			url: 'https://outlook.cloud.microsoft/mail/inbox/id/abc',
 			sourceKind: 'email',
 		});
 
 		expect(result).toBe('Email subject: Pedro Beltran Garcia is cleared to work');
+	});
+
+	test('does not save Outlook mailbox chrome as an email subject', () => {
+		const result = buildSourceLine({
+			title: 'Inbox - Franklin Garrett - Outlook',
+			url: 'https://outlook.cloud.microsoft/mail/inbox/id/abc',
+			sourceKind: 'email',
+		});
+
+		expect(result).toBe('Email source: subject unavailable');
 	});
 });

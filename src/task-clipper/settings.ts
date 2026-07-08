@@ -3,7 +3,9 @@ import {
 	TaskClipperSettings,
 	cleanProjectName,
 	cleanStatusId,
+	loadOpenAiApiKey,
 	loadTaskClipperSettings,
+	saveOpenAiApiKey,
 	saveTaskClipperSettings,
 } from './storage';
 
@@ -23,6 +25,8 @@ async function populateForm(): Promise<void> {
 	(document.getElementById('vault-name') as HTMLInputElement).value = settings.vaultName;
 	(document.getElementById('destination-file') as HTMLInputElement).value = settings.destinationFile;
 	(document.getElementById('task-folder') as HTMLInputElement).value = settings.taskFolder;
+	(document.getElementById('openai-model') as HTMLInputElement).value = settings.openAiModel;
+	(document.getElementById('openai-api-key') as HTMLInputElement).value = await loadOpenAiApiKey();
 	renderProjects();
 	renderTags();
 	renderStatuses();
@@ -40,7 +44,9 @@ async function saveForm(): Promise<void> {
 	settings.vaultName = (document.getElementById('vault-name') as HTMLInputElement).value;
 	settings.destinationFile = (document.getElementById('destination-file') as HTMLInputElement).value;
 	settings.taskFolder = (document.getElementById('task-folder') as HTMLInputElement).value;
+	settings.openAiModel = (document.getElementById('openai-model') as HTMLInputElement).value;
 	settings = await saveTaskClipperSettings(settings);
+	await saveOpenAiApiKey((document.getElementById('openai-api-key') as HTMLInputElement).value);
 	await populateForm();
 	setNotice('Settings saved.');
 }

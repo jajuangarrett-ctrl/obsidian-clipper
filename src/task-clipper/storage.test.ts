@@ -28,4 +28,16 @@ describe('task clipper settings', () => {
 		expect(normalizeSettings(undefined).taskFolder).toBe('TaskNotes/Tasks');
 		expect(normalizeSettings({ taskFolder: '/TaskNotes/Tasks.md' }).taskFolder).toBe('TaskNotes/Tasks');
 	});
+
+	test('keeps an OpenAI model setting for title generation', () => {
+		expect(normalizeSettings(undefined).openAiModel).toBe(DEFAULT_SETTINGS.openAiModel);
+		expect(normalizeSettings({ openAiModel: '  gpt-test-mini  ' }).openAiModel).toBe('gpt-test-mini');
+	});
+
+	test('does not carry a saved project into the next clip', () => {
+		expect(normalizeSettings({
+			projects: ['Basic Needs'],
+			defaultProject: 'Basic Needs',
+		}).defaultProject).toBe('');
+	});
 });

@@ -15,9 +15,11 @@ export type TaskClipperSettings = {
 	defaultStatus: string;
 	defaultProject: string;
 	silentOpen: boolean;
+	openAiModel: string;
 };
 
 const SETTINGS_KEY = 'fjgTaskClipperSettings';
+const OPENAI_API_KEY = 'fjgTaskClipperOpenAiApiKey';
 
 export const DEFAULT_STATUSES: StatusOption[] = [
 	{ id: 'Inbox', label: 'Inbox' },
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	defaultStatus: 'Inbox',
 	defaultProject: '',
 	silentOpen: true,
+	openAiModel: 'gpt-4.1-mini',
 };
 
 export function cleanStatusId(value: string): string {
@@ -62,8 +65,6 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 	const defaultStatus = statuses.some((status) => status.id === merged.defaultStatus)
 		? merged.defaultStatus
 		: statuses[0].id;
-	const defaultProject = projects.includes(merged.defaultProject) ? merged.defaultProject : '';
-
 	return {
 		vaultName: normalizeVaultName(source.vaultName, hasVaultName),
 		destinationFile: normalizeDestinationFile(merged.destinationFile),
@@ -72,8 +73,9 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		tags,
 		statuses,
 		defaultStatus,
-		defaultProject,
+		defaultProject: '',
 		silentOpen: Boolean(merged.silentOpen),
+		openAiModel: normalizeOpenAiModel(merged.openAiModel),
 	};
 }
 
@@ -86,6 +88,20 @@ export async function saveTaskClipperSettings(settings: TaskClipperSettings): Pr
 	const normalized = normalizeSettings(settings);
 	await browser.storage.sync.set({ [SETTINGS_KEY]: normalized });
 	return normalized;
+}
+
+export async function loadOpenAiApiKey(): Promise<string> {
+	const result = await browser.storage.local.get(OPENAI_API_KEY) as Record<string, string | undefined>;
+	return result[OPENAI_API_KEY] || '';
+}
+
+export async function saveOpenAiApiKey(apiKey: string): Promise<void> {
+	const clean = apiKey.trim();
+	if (clean) {
+		await browser.storage.local.set({ [OPENAI_API_KEY]: clean });
+		return;
+	}
+	await browser.storage.local.remove(OPENAI_API_KEY);
 }
 
 function normalizeStatuses(statuses: StatusOption[] | undefined): StatusOption[] {
@@ -134,6 +150,10 @@ function normalizeDestinationFile(value: string): string {
 		.replace(/\\/g, '/')
 		.replace(/^\/+/, '')
 		.replace(/\.md$/i, '');
+}
+
+function normalizeOpenAiModel(value: string | undefined): string {
+	return String(value || DEFAULT_SETTINGS.openAiModel).trim() || DEFAULT_SETTINGS.openAiModel;
 }
 
 function normalizeVaultName(value: string | undefined, hasValue: boolean): string {
