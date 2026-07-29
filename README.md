@@ -2,7 +2,7 @@
 
 Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) for Franklin Garrett's FJG task workflow.
 
-Version 2 does not use the TaskNotes HTTP API. The Chrome extension sends selected text through an Obsidian protocol URL, and the companion Obsidian plugin creates or updates Markdown task notes directly in the vault.
+Version 2 does not use the TaskNotes HTTP API. The Chrome extension sends selected text through the FJG Task Manager Obsidian protocol URL, and FJG Task Manager creates or updates task workspaces directly in the vault.
 
 Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User Guide.md](docs/FJG%20Obsidian%20Task%20Clipper%20User%20Guide.md).
 
@@ -10,8 +10,8 @@ Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User
 
 - Captures selected Chrome text or the current page title.
 - Lets Franklin choose status, project, and tags in the extension popup.
-- Creates one Markdown note per task in `TaskNotes/Tasks/`.
-- Appends a linked checkbox item to `08 Tasks/Tasks.md` as a lightweight index.
+- Creates one FJG Task Manager workspace per task in `08 Tasks/Workspaces/`.
+- Stores each task as `task.md` with its update log in `updates.md`.
 - Adds selected Chrome text as an update under `## Updates` in an existing task note.
 - Uses clean task-title filenames, adding ` - 2`, ` - 3`, and so on only for duplicates.
 - Keeps every task compatible with Obsidian task plugins by including `#task`.
@@ -43,7 +43,7 @@ Source: [Budget page](https://example.com/budget)
 ## Architecture
 
 ```text
-Chrome extension -> obsidian://fjg-obsidian-task-clipper -> FJG Task Clipper Bridge -> TaskNotes/Tasks/*.md
+Chrome extension -> obsidian://fjg-task-clipper -> FJG Task Manager -> 08 Tasks/Workspaces/*/task.md
 ```
 
 This avoids localhost, CORS, Chrome Local Network Access prompts, bearer tokens, and TaskNotes API behavior.
@@ -72,21 +72,9 @@ Load or reload the unpacked extension:
 
 ## Obsidian Setup
 
-Install the companion bridge plugin into the FJG Vault:
+Install and enable `FJG Task Manager` in Obsidian. It owns the `obsidian://fjg-task-clipper` protocol and writes real Task Manager workspaces.
 
-```text
-/Users/franklingarrett/FJG Vault/.obsidian/plugins/fjg-task-clipper-bridge/
-```
-
-Required files:
-
-```text
-main.js
-manifest.json
-README.md
-```
-
-Enable `FJG Task Clipper Bridge` in Obsidian Community Plugins, then restart Obsidian if the protocol handler was just installed.
+The older `FJG Task Clipper Bridge` is only for direct TaskNotes-style note output and is not used for the Task Manager workflow.
 
 ## Extension Settings
 
@@ -95,8 +83,8 @@ Open the extension options page.
 Destination:
 
 - Vault name: blank to use the currently open Obsidian vault, or `FJG Vault` if explicit routing is needed.
-- Task index page: `08 Tasks/Tasks`
-- Task notes folder: `TaskNotes/Tasks`
+- Task index page: kept for compatibility; FJG Task Manager ignores it.
+- Task notes folder: kept for compatibility; FJG Task Manager ignores it.
 
 Projects:
 

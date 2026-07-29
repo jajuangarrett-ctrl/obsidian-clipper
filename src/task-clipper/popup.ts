@@ -406,7 +406,7 @@ function buildObsidianUrl(payload: ProtocolPayload, vaultName: string): string {
 		payload: encodePayload(payload),
 	});
 	if (vaultName) params.set('vault', vaultName);
-	return `obsidian://fjg-obsidian-task-clipper?${params.toString()}`;
+	return `obsidian://fjg-task-clipper?${params.toString()}`;
 }
 
 function encodePayload(payload: ProtocolPayload): string {
