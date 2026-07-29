@@ -1,7 +1,7 @@
 {
 	"name": "fjg-obsidian-task-clipper",
-	"version": "0.1.0",
-	"description": "FJG Chrome task clipper for creating Obsidian Markdown tasks.",
+	"version": "0.1.2",
+	"description": "FJG browser clipper for creating and updating FJG Task Manager workspaces in Obsidian.",
 	"bin": {
 		"fjg-obsidian-task-clipper": "./dist/cli.cjs"
 	},
