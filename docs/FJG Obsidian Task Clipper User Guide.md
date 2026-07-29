@@ -202,6 +202,8 @@ The default FJG statuses are:
 - `Waiting`
 - `On-Hold`
 
+The default selected status is `DoFirst`, because the FJG Task Manager dashboard opens on the `Do First` view. Choose `Inbox` manually when a clipped task should stay out of the opening dashboard view.
+
 Each status has:
 
 - A label shown in the extension.

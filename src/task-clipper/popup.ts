@@ -211,7 +211,7 @@ async function createTask(): Promise<void> {
 		createdAt: new Date().toISOString(),
 	};
 
-	await sendPayload(payload, 'Task note sent to Obsidian.');
+	await sendPayload(payload, 'Task workspace sent to Obsidian.');
 }
 
 async function generateTitle(): Promise<void> {

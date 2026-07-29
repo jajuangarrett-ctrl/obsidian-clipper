@@ -94,6 +94,7 @@ Projects:
 Statuses:
 
 - The FJG defaults are already included.
+- The default status is `Do First` so new clipped tasks appear in the dashboard's opening view.
 - Add new statuses by entering a display label and tag value.
 - The tag value is what appears on the saved task line, for example `DoSoon` becomes `#DoSoon`.
 

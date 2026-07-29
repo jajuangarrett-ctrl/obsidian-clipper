@@ -14,6 +14,7 @@ export type TaskClipperSettings = {
 	statuses: StatusOption[];
 	defaultStatus: string;
 	defaultProject: string;
+	taskManagerDefaultsVersion: number;
 	silentOpen: boolean;
 	openAiModel: string;
 };
@@ -37,8 +38,9 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	projects: [],
 	tags: ['task'],
 	statuses: DEFAULT_STATUSES,
-	defaultStatus: 'Inbox',
+	defaultStatus: 'DoFirst',
 	defaultProject: '',
+	taskManagerDefaultsVersion: 1,
 	silentOpen: true,
 	openAiModel: 'gpt-4.1-mini',
 };
@@ -62,8 +64,9 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 	const statuses = normalizeStatuses(merged.statuses);
 	const projects = normalizeProjects(merged.projects);
 	const tags = normalizeTags(merged.tags);
-	const defaultStatus = statuses.some((status) => status.id === merged.defaultStatus)
-		? merged.defaultStatus
+	const defaultStatusCandidate = defaultStatusForTaskManager(source, merged.defaultStatus);
+	const defaultStatus = statuses.some((status) => status.id === defaultStatusCandidate)
+		? defaultStatusCandidate
 		: statuses[0].id;
 	return {
 		vaultName: normalizeVaultName(source.vaultName, hasVaultName),
@@ -74,6 +77,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		statuses,
 		defaultStatus,
 		defaultProject: '',
+		taskManagerDefaultsVersion: DEFAULT_SETTINGS.taskManagerDefaultsVersion,
 		silentOpen: Boolean(merged.silentOpen),
 		openAiModel: normalizeOpenAiModel(merged.openAiModel),
 	};
@@ -160,4 +164,13 @@ function normalizeVaultName(value: string | undefined, hasValue: boolean): strin
 	if (!hasValue || value === undefined) return DEFAULT_SETTINGS.vaultName;
 	const trimmed = String(value).trim();
 	return trimmed === 'FJG Vault' ? '' : trimmed;
+}
+
+function defaultStatusForTaskManager(
+	source: Partial<TaskClipperSettings>,
+	defaultStatus: string,
+): string {
+	const alreadyMigrated = Number(source.taskManagerDefaultsVersion || 0) >= DEFAULT_SETTINGS.taskManagerDefaultsVersion;
+	if (!alreadyMigrated && defaultStatus === 'Inbox') return DEFAULT_SETTINGS.defaultStatus;
+	return defaultStatus || DEFAULT_SETTINGS.defaultStatus;
 }

@@ -94,7 +94,7 @@ async function addTag(event: Event): Promise<void> {
 
 async function resetStatuses(): Promise<void> {
 	settings.statuses = DEFAULT_STATUSES;
-	settings.defaultStatus = 'Inbox';
+	settings.defaultStatus = 'DoFirst';
 	settings = await saveTaskClipperSettings(settings);
 	renderStatuses();
 	setNotice('Default statuses restored.');
@@ -172,7 +172,7 @@ function renderStatuses(): void {
 		button.disabled = defaultIds.has(status.id);
 		button.addEventListener('click', async () => {
 			settings.statuses = settings.statuses.filter((itemStatus) => itemStatus.id !== status.id);
-			if (settings.defaultStatus === status.id) settings.defaultStatus = 'Inbox';
+			if (settings.defaultStatus === status.id) settings.defaultStatus = 'DoFirst';
 			settings = await saveTaskClipperSettings(settings);
 			renderStatuses();
 			setNotice('Status deleted.');

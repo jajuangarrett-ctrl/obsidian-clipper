@@ -40,4 +40,17 @@ describe('task clipper settings', () => {
 			defaultProject: 'Basic Needs',
 		}).defaultProject).toBe('');
 	});
+
+	test('defaults new Task Manager clips to Do First', () => {
+		expect(DEFAULT_SETTINGS.defaultStatus).toBe('DoFirst');
+		expect(normalizeSettings(undefined).defaultStatus).toBe('DoFirst');
+	});
+
+	test('migrates the old Inbox default to Do First once', () => {
+		expect(normalizeSettings({ defaultStatus: 'Inbox' }).defaultStatus).toBe('DoFirst');
+		expect(normalizeSettings({
+			defaultStatus: 'Inbox',
+			taskManagerDefaultsVersion: 1,
+		}).defaultStatus).toBe('Inbox');
+	});
 });
