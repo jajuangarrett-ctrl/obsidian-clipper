@@ -7,7 +7,7 @@ Version 2 replaces the old TaskNotes HTTP API workflow. It uses two local pieces
 - A Chrome extension loaded from this repo's `dist/` folder.
 - A small Obsidian companion plugin named `FJG Task Clipper Bridge`.
 
-The extension sends selected Chrome text to Obsidian with an `obsidian://fjg-task-clipper` URL. The bridge receives it and creates or updates Markdown task notes directly in the vault.
+The extension sends selected Chrome text to Obsidian with an `obsidian://fjg-obsidian-task-clipper` URL. The bridge receives it and creates or updates Markdown task notes directly in the vault.
 
 No TaskNotes API server, localhost port, bearer token, or TaskNotes authentication token is required.
 
@@ -147,7 +147,7 @@ These steps happen in Obsidian:
 The bridge registers the local protocol handler:
 
 ```text
-obsidian://fjg-task-clipper
+obsidian://fjg-obsidian-task-clipper
 ```
 
 If the Chrome extension opens Obsidian but no task appears, restart Obsidian once so the protocol handler is registered cleanly.
@@ -403,4 +403,4 @@ npm run build:chrome
 node --check obsidian-plugin/main.js
 ```
 
-The local Obsidian bridge can also be smoke-tested with an `obsidian://fjg-task-clipper` payload that creates a test task note and then appends an update to it.
+The local Obsidian bridge can also be smoke-tested with an `obsidian://fjg-obsidian-task-clipper` payload that creates a test task note and then appends an update to it.

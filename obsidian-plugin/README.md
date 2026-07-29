@@ -5,7 +5,7 @@ Companion Obsidian plugin for the FJG Obsidian Task Clipper Chrome extension.
 The Chrome extension sends selected text to Obsidian with:
 
 ```text
-obsidian://fjg-task-clipper?payload=...
+obsidian://fjg-obsidian-task-clipper?payload=...
 ```
 
 This plugin decodes the payload and writes task notes directly in the vault. It does not use the TaskNotes HTTP API or any local web server.

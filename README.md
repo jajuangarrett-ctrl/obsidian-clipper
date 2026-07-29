@@ -43,7 +43,7 @@ Source: [Budget page](https://example.com/budget)
 ## Architecture
 
 ```text
-Chrome extension -> obsidian://fjg-task-clipper -> FJG Task Clipper Bridge -> TaskNotes/Tasks/*.md
+Chrome extension -> obsidian://fjg-obsidian-task-clipper -> FJG Task Clipper Bridge -> TaskNotes/Tasks/*.md
 ```
 
 This avoids localhost, CORS, Chrome Local Network Access prompts, bearer tokens, and TaskNotes API behavior.

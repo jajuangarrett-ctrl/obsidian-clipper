@@ -9,7 +9,7 @@ module.exports = class FjgTaskClipperBridgePlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.registerObsidianProtocolHandler("fjg-task-clipper", async (params) => {
+    this.registerObsidianProtocolHandler("fjg-obsidian-task-clipper", async (params) => {
       await this.handleTaskClip(params);
     });
 
