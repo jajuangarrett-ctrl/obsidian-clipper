@@ -5,40 +5,44 @@ This is the version 2 setup guide for the FJG Obsidian Task Clipper.
 Version 2 replaces the old TaskNotes HTTP API workflow. It uses two local pieces:
 
 - A Chrome extension loaded from this repo's `dist/` folder.
-- A small Obsidian companion plugin named `FJG Task Clipper Bridge`.
+- The `FJG Task Manager` Obsidian plugin.
 
 The extension sends selected Chrome text to Obsidian with an `obsidian://fjg-task-clipper` URL. FJG Task Manager receives it and creates or updates task workspaces directly in the vault.
 
-No TaskNotes API server, localhost port, bearer token, or TaskNotes authentication token is required.
+No TaskNotes API server, Taskboard API, Netlify task endpoint, bearer token, or TaskNotes authentication token is required.
 
 ## What It Creates
 
-By default, new task notes are created in:
+By default, new task workspaces are created in:
 
 ```text
-TaskNotes/Tasks/
+08 Tasks/Workspaces/
 ```
 
-Each task gets its own Markdown note. The bridge also appends a linked checkbox item to:
+Each task gets its own folder:
 
 ```text
-08 Tasks/Tasks.md
+08 Tasks/Workspaces/<Task Title>/
+  task.md
+  updates.md
+  attachments/
 ```
 
-That gives you a compact index page without forcing every update into one long document.
+That is the same workspace format used by the FJG Task Manager dashboard.
 
-Example task note:
+Example task workspace:
 
 ```md
 ---
+schema_version: 1
+type: fjg_task
+task_id: tsk_...
 title: Review the budget packet
-status: DoSoon
+status: do-soon
 priority: normal
-projects:
-  - Basic Needs
+project: Basic Needs
 tags:
   - task
-  - DoSoon
 ---
 # Review the budget packet
 
@@ -57,18 +61,12 @@ Source: [Budget page](https://example.com/budget)
 ## Updates
 ```
 
-Example index line:
-
-```md
-- [ ] [[TaskNotes/Tasks/Review the budget packet|Review the budget packet]] PJ: Basic Needs #task #DoSoon
-```
-
-If a note with the same title already exists, the bridge creates the next available filename with a numeric suffix:
+If a workspace with the same title already exists, FJG Task Manager creates the next available folder name with a numeric suffix:
 
 ```text
-Review the budget packet.md
-Review the budget packet - 2.md
-Review the budget packet - 3.md
+Review the budget packet/
+Review the budget packet (2)/
+Review the budget packet (3)/
 ```
 
 ## Files Involved
@@ -85,13 +83,13 @@ Chrome extension build output:
 /Users/franklingarrett/Codex/plugins/obsidian-task-clipper/dist
 ```
 
-Obsidian bridge plugin installed in the FJG Vault:
+FJG Task Manager plugin installed in the FJG Vault:
 
 ```text
-/Users/franklingarrett/FJG Vault/.obsidian/plugins/fjg-task-clipper-bridge
+/Users/franklingarrett/FJG Vault/.obsidian/plugins/fjg-task-manager
 ```
 
-The bridge plugin folder must contain:
+The plugin folder must contain:
 
 ```text
 main.js
@@ -134,17 +132,17 @@ These steps happen in Chrome:
 
 Reloading the unpacked extension is required after each new `npm run build:chrome`.
 
-## Enable The Obsidian Bridge
+## Enable FJG Task Manager
 
 These steps happen in Obsidian:
 
 1. Open the FJG Vault.
 2. Go to `Settings -> Community plugins`.
 3. Confirm `Restricted mode` is off.
-4. Enable `FJG Task Clipper Bridge`.
-5. Restart Obsidian if the bridge was just installed or updated.
+4. Enable `FJG Task Manager`.
+5. Restart Obsidian if the plugin was just installed or updated.
 
-The bridge registers the local protocol handler:
+FJG Task Manager registers the local protocol handler:
 
 ```text
 obsidian://fjg-task-clipper
@@ -163,8 +161,8 @@ Recommended destination settings:
 
 ```text
 Vault name: leave blank
-Task index page: 08 Tasks/Tasks
-Task notes folder: TaskNotes/Tasks
+Task index page: kept for compatibility; ignored by FJG Task Manager
+Task notes folder: kept for compatibility; ignored by FJG Task Manager
 ```
 
 Leaving the vault name blank tells Obsidian to use the currently open vault. This is usually more reliable than hardcoding `FJG Vault`, especially when Obsidian is already open to the right vault.
@@ -189,7 +187,7 @@ To add a project:
 3. Click `Add project`.
 4. Click `Save settings`.
 
-The project appears in the popup's `Project` dropdown. When selected, it is written into the task note frontmatter and index line.
+The project appears in the popup's `Project` dropdown. When selected, it is written into the task workspace frontmatter.
 
 Project choice is per task. Each time the popup opens, it starts at `No project` so a prior clip does not accidentally assign the next task.
 
@@ -257,7 +255,7 @@ You can add optional tags in extension `Options`. In the popup, the `Tags` field
 9. Keep `Include page source` checked if you want the source URL saved.
 10. Click `Create Task`.
 
-Obsidian should open or come forward. A dedicated task note should be created in `TaskNotes/Tasks`, and a linked checkbox should be appended to `08 Tasks/Tasks.md`.
+Obsidian should open or come forward. A task workspace should be created in `08 Tasks/Workspaces`, and the FJG Task Manager dashboard should show it after refresh.
 
 If Chrome asks whether to open Obsidian, choose `Open Obsidian`. That permission prompt is Chrome's external-app safety check for the `obsidian://` handoff.
 
@@ -279,18 +277,18 @@ If `Generate` says an OpenAI API key is missing:
 
 ## Add An Update
 
-Use `Add Update` when the task already exists and selected web text should become a dated update inside that task note.
+Use `Add Update` when the task already exists and selected web text should become a dated update inside that task workspace.
 
 1. Select update text on a web page.
 2. Right-click and choose `Add selection as task update`, or click the extension icon and choose `Add Update`.
-3. In `Task to update`, type enough of the task title or note filename to identify one task.
+3. In `Task to update`, type enough of the task title to identify one task.
 4. Edit the update text if needed.
 5. Keep `Include page source` checked if you want the source URL saved.
 6. Click `Add Update`.
 
-The bridge searches `TaskNotes/Tasks` for a matching Markdown note.
+FJG Task Manager searches its indexed task workspaces for a matching task.
 
-- If it finds one exact match, it appends the update under `## Updates`.
+- If it finds one exact match, it appends the update to the task's `updates.md`.
 - If it finds no match, it shows an Obsidian notice.
 - If it finds multiple matches, it asks you to type more of the title or use the note filename.
 
@@ -325,21 +323,15 @@ This is intentional because browser email URLs often reopen the mailbox shell in
 After clicking `Create Task`, open:
 
 ```text
-/Users/franklingarrett/FJG Vault/TaskNotes/Tasks/
+/Users/franklingarrett/FJG Vault/08 Tasks/Workspaces/
 ```
 
-Confirm a new task note was created. Then open:
+Confirm a new task workspace folder was created with `task.md`, `updates.md`, and `attachments/`.
+
+After clicking `Add Update`, open the task workspace and confirm the update appears in:
 
 ```text
-/Users/franklingarrett/FJG Vault/08 Tasks/Tasks.md
-```
-
-Confirm a linked checkbox item points to the new task note.
-
-After clicking `Add Update`, open the task note and confirm the update appears under:
-
-```md
-## Updates
+updates.md
 ```
 
 ## Troubleshooting
@@ -348,27 +340,25 @@ If nothing happens after clicking `Create Task` or `Add Update`:
 
 1. Confirm Obsidian is running.
 2. Confirm the FJG Vault is open.
-3. Confirm `FJG Task Clipper Bridge` is enabled in Obsidian.
+3. Confirm `FJG Task Manager` is enabled in Obsidian.
 4. Restart Obsidian once.
 5. Reload the unpacked Chrome extension from `chrome://extensions`.
 6. If Chrome opens an `obsidian://` tab or prompt, allow it to open Obsidian.
 
-If Obsidian opens but no task note appears:
+If Obsidian opens but no task workspace appears:
 
-1. Check that the extension `Task notes folder` setting is `TaskNotes/Tasks`.
-2. Confirm the bridge plugin is installed at:
+1. Confirm the FJG Task Manager plugin is installed at:
 
 ```text
-/Users/franklingarrett/FJG Vault/.obsidian/plugins/fjg-task-clipper-bridge
+/Users/franklingarrett/FJG Vault/.obsidian/plugins/fjg-task-manager
 ```
 
-3. Open Obsidian Developer Tools and check for `FJG Task Clipper Bridge` errors.
+2. Open Obsidian Developer Tools and check for `FJG Task Manager` clipper errors.
 
 If `Add Update` cannot find a task:
 
 1. Type more of the task title.
-2. Or type the task note filename without `.md`.
-3. Confirm the task note lives in `TaskNotes/Tasks`.
+2. Confirm the task workspace lives under `08 Tasks/Workspaces` or `08 Tasks/Archive`.
 
 If Chrome says the extension changed:
 
@@ -377,7 +367,7 @@ If Chrome says the extension changed:
 
 If a selected text block is very long:
 
-The extension may copy the task or update text to the clipboard instead of opening Obsidian, because protocol URLs have practical length limits. Paste the copied text manually into the task note.
+The extension may copy the task or update text to the clipboard instead of opening Obsidian, because protocol URLs have practical length limits. Paste the copied text manually into the task workspace.
 
 ## What Is Different From The Old Version
 
@@ -389,9 +379,7 @@ http://localhost:8080/api/health
 
 That required Obsidian, TaskNotes, the TaskNotes HTTP API, local network permissions, and a matching bearer token. Chrome and macOS made that flow fragile.
 
-Version 2 removes that dependency. The extension now creates and updates Markdown task notes through Obsidian itself.
-
-The generated task notes are still compatible with TaskNotes-style organization because they live in `TaskNotes/Tasks`, carry the `task` tag, and use frontmatter such as `title`, `status`, `projects`, `dateCreated`, and `dateModified`.
+Version 2 removes that dependency. The extension now creates and updates FJG Task Manager workspaces through Obsidian itself.
 
 ## Developer Verification
 

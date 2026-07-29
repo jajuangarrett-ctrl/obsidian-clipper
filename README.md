@@ -12,8 +12,8 @@ Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User
 - Lets Franklin choose status, project, and tags in the extension popup.
 - Creates one FJG Task Manager workspace per task in `08 Tasks/Workspaces/`.
 - Stores each task as `task.md` with its update log in `updates.md`.
-- Adds selected Chrome text as an update under `## Updates` in an existing task note.
-- Uses clean task-title filenames, adding ` - 2`, ` - 3`, and so on only for duplicates.
+- Adds selected Chrome text as an update in an existing task workspace's `updates.md`.
+- Uses clean task-title folder names, adding `(2)`, `(3)`, and so on only for duplicates.
 - Keeps every task compatible with Obsidian task plugins by including `#task`.
 - Uses status tags such as `#Inbox`, `#DoFirst`, and `#Waiting`.
 
@@ -26,7 +26,7 @@ Default FJG statuses:
 - `Waiting`
 - `On-Hold`
 
-Example task note:
+Example task workspace:
 
 ```md
 # Review the budget packet
@@ -74,7 +74,7 @@ Load or reload the unpacked extension:
 
 Install and enable `FJG Task Manager` in Obsidian. It owns the `obsidian://fjg-task-clipper` protocol and writes real Task Manager workspaces.
 
-The older `FJG Task Clipper Bridge` is only for direct TaskNotes-style note output and is not used for the Task Manager workflow.
+Leave the older `FJG Task Clipper Bridge` disabled for the Task Manager workflow. It is only for direct TaskNotes-style note output.
 
 ## Extension Settings
 
@@ -109,10 +109,10 @@ Add an update:
 
 1. Select update text on a web page.
 2. Right-click and choose `Add selection as task update`, or open the extension and choose `Add Update`.
-3. Type enough of the task title or task note filename to identify one task.
+3. Type enough of the task title to identify one task.
 4. Click `Add Update`.
 
-If Chrome asks whether to open Obsidian, allow it. The extension uses an `obsidian://` URL to hand the task payload to the bridge plugin.
+If Chrome asks whether to open Obsidian, allow it. The extension uses an `obsidian://` URL to hand the task payload to FJG Task Manager.
 
 ## Verification
 
@@ -122,4 +122,4 @@ npm run build:chrome
 node --check obsidian-plugin/main.js
 ```
 
-The Obsidian bridge can be smoke-tested with a protocol payload into a separate test note before using the live task page.
+The FJG Task Manager protocol handler can be smoke-tested with a protocol payload that creates a live task workspace.
