@@ -118,26 +118,36 @@ async function readPageContext(tab: browser.Tabs.Tab | undefined, fallbackUrl: s
 					if (looksLikeSubject(titleSubject)) return titleSubject;
 
 					const selectors = [
+						'[aria-label="Reading Pane"] [role="heading"][aria-level="3"]',
+						'[aria-label="Reading Pane"] h3',
 						'[data-testid="message-subject"]',
 						'[data-testid="conversation-subject"]',
 						'[aria-label^="Subject"]',
 						'[aria-label^="subject"]',
 						'[role="heading"][aria-level="1"]',
 						'[role="heading"][aria-level="2"]',
+						'[role="heading"][aria-level="3"]',
 						'h1',
 						'h2',
+						'h3',
 					];
 					for (const selector of selectors) {
 						const nodes = Array.from(document.querySelectorAll(selector));
 						for (const node of nodes) {
-							const text = cleanSubject(
-								(node.textContent || '') ||
-								(node.getAttribute('aria-label') || ''),
-							);
+							const text = cleanSubject(textWithoutControls(node));
 							if (looksLikeSubject(text)) return text;
 						}
 					}
 					return cleanSubject(document.title || '');
+				}
+
+				function textWithoutControls(node: Element): string {
+					let text = (node.textContent || '') || (node.getAttribute('aria-label') || '');
+					for (const control of Array.from(node.querySelectorAll('button,[role="button"]'))) {
+						const controlText = control.textContent || '';
+						if (controlText) text = text.replace(controlText, '');
+					}
+					return text;
 				}
 
 				function cleanSubject(value: string): string {

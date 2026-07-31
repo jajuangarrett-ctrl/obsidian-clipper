@@ -1,6 +1,13 @@
 import browser from '../utils/browser-polyfill';
 import { fetchTaskManagerProjects } from './catalog-client';
 import {
+	ProjectSelectionDraft,
+	cleanEmailSubject,
+	firstMeaningfulLine,
+	initialTaskTitle,
+	restorableProject,
+} from './capture';
+import {
 	PageContext,
 	buildObsidianTaskContent,
 	buildTaskLines,
@@ -16,6 +23,7 @@ import {
 } from './storage';
 
 const PENDING_CONTEXT_KEY = 'fjgTaskClipperPendingContext';
+const PROJECT_SELECTION_KEY = 'fjgTaskClipperProjectSelection';
 const PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const MAX_OBSIDIAN_URL_LENGTH = 60000;
 
@@ -84,12 +92,13 @@ async function init(): Promise<void> {
 
 	const initialText = initial.selection || initial.title || '';
 	taskDetails.value = initialText;
-	taskTitle.value = firstLine(initialText) || initial.title || '';
+	taskTitle.value = initialTaskTitle(initial);
 	updateText.value = initial.selection || '';
 	emailSubject.value = pageContext.sourceKind === 'email' ? cleanEmailSubject(pageContext.title) : '';
 	tagsField.value = 'task';
 
 	await renderSelectors();
+	await restoreProjectSelection();
 	bindEvents();
 	setMode(mode);
 	(mode === 'update' ? updateTaskQuery : taskTitle).focus();
@@ -103,6 +112,9 @@ function bindEvents(): void {
 	updateTab.addEventListener('click', () => setMode('update'));
 	saveButton.addEventListener('click', submit);
 	generateTitleButton.addEventListener('click', generateTitle);
+	projectSelect.addEventListener('change', () => {
+		void rememberProjectSelection();
+	});
 
 	for (const element of [
 		taskTitle,
@@ -198,7 +210,7 @@ async function submit(): Promise<void> {
 }
 
 async function createTask(): Promise<void> {
-	const title = taskTitle.value.trim() || firstLine(taskDetails.value);
+	const title = taskTitle.value.trim() || firstMeaningfulLine(taskDetails.value);
 	const details = taskDetails.value.trim();
 	if (!title && !details) return setNotice('Add task text first.', true);
 
@@ -220,6 +232,7 @@ async function createTask(): Promise<void> {
 	};
 
 	await sendPayload(payload, 'Task workspace sent to Obsidian.');
+	await clearProjectSelection();
 }
 
 async function generateTitle(): Promise<void> {
@@ -428,14 +441,6 @@ function encodePayload(payload: ProtocolPayload): string {
 		.replace(/=+$/g, '');
 }
 
-function firstLine(value: string): string {
-	return value
-		.replace(/\r\n/g, '\n')
-		.split('\n')
-		.map((line) => line.trim())
-		.find(Boolean) || '';
-}
-
 type InitialPageContext = PageContext & {
 	selection: string;
 	mode?: PopupMode;
@@ -508,26 +513,36 @@ async function readActivePageContext(): Promise<InitialPageContext> {
 					if (looksLikeSubject(titleSubject)) return titleSubject;
 
 					const selectors = [
+						'[aria-label="Reading Pane"] [role="heading"][aria-level="3"]',
+						'[aria-label="Reading Pane"] h3',
 						'[data-testid="message-subject"]',
 						'[data-testid="conversation-subject"]',
 						'[aria-label^="Subject"]',
 						'[aria-label^="subject"]',
 						'[role="heading"][aria-level="1"]',
 						'[role="heading"][aria-level="2"]',
+						'[role="heading"][aria-level="3"]',
 						'h1',
 						'h2',
+						'h3',
 					];
 					for (const selector of selectors) {
 						const nodes = Array.from(document.querySelectorAll(selector));
 						for (const node of nodes) {
-							const text = cleanSubject(
-								(node.textContent || '') ||
-								(node.getAttribute('aria-label') || ''),
-							);
+							const text = cleanSubject(textWithoutControls(node));
 							if (looksLikeSubject(text)) return text;
 						}
 					}
 					return cleanSubject(document.title || '');
+				}
+
+				function textWithoutControls(node: Element): string {
+					let text = (node.textContent || '') || (node.getAttribute('aria-label') || '');
+					for (const control of Array.from(node.querySelectorAll('button,[role="button"]'))) {
+						const controlText = control.textContent || '';
+						if (controlText) text = text.replace(controlText, '');
+					}
+					return text;
 				}
 
 				function cleanSubject(value: string): string {
@@ -581,20 +596,39 @@ function isEmailUrl(url: string): boolean {
 	}
 }
 
-function cleanEmailSubject(value: string): string {
-	const clean = String(value || '')
-		.replace(/^subject\s*:?\s*/i, '')
-		.replace(/\s*Summarize this email\s*$/i, '')
-		.replace(/\s+-\s+[^-]+?\s+-\s+Outlook$/i, '')
-		.replace(/\s+-\s+(Outlook|Microsoft Outlook|Microsoft Outlook Web App|Mail)$/i, '')
-		.replace(/\s+/g, ' ')
-		.trim();
-	return looksLikeEmailSubject(clean) ? clean : '';
+async function rememberProjectSelection(): Promise<void> {
+	const project = projectSelect.value;
+	if (!project || !pageContext.url) {
+		await clearProjectSelection();
+		return;
+	}
+	await browser.storage.local.set({
+		[PROJECT_SELECTION_KEY]: {
+			project,
+			url: pageContext.url,
+			savedAt: Date.now(),
+		} satisfies ProjectSelectionDraft,
+	});
 }
 
-function looksLikeEmailSubject(value: string): boolean {
-	if (!value || value.length < 3 || value.length > 240) return false;
-	return !/^(Inbox|Mail|Outlook|Microsoft Outlook|Message|Reading Pane|Navigation pane|Navigation)$/i.test(value);
+async function restoreProjectSelection(): Promise<void> {
+	const result = await browser.storage.local.get(PROJECT_SELECTION_KEY) as Record<string, ProjectSelectionDraft | undefined>;
+	const project = restorableProject(
+		result[PROJECT_SELECTION_KEY],
+		pageContext.url,
+		Array.from(projectSelect.options).map((option) => option.value).filter(Boolean),
+		Date.now(),
+		PENDING_MAX_AGE_MS,
+	);
+	if (project) {
+		projectSelect.value = project;
+		return;
+	}
+	await clearProjectSelection();
+}
+
+async function clearProjectSelection(): Promise<void> {
+	await browser.storage.local.remove(PROJECT_SELECTION_KEY);
 }
 
 function setNotice(message: string, isError = false): void {
