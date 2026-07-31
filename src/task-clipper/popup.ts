@@ -1,4 +1,5 @@
 import browser from '../utils/browser-polyfill';
+import { fetchTaskManagerProjects } from './catalog-client';
 import {
 	PageContext,
 	buildObsidianTaskContent,
@@ -6,7 +7,9 @@ import {
 	buildUpdateBlock,
 } from './format';
 import {
+	TaskCatalogSettings,
 	TaskClipperSettings,
+	loadCatalogSettings,
 	loadOpenAiApiKey,
 	loadTaskClipperSettings,
 	saveTaskClipperSettings,
@@ -45,6 +48,7 @@ type AppendUpdatePayload = {
 type ProtocolPayload = CreateTaskPayload | AppendUpdatePayload;
 
 let settings: TaskClipperSettings;
+let catalogSettings: TaskCatalogSettings;
 let mode: PopupMode = 'create';
 let pageContext: PageContext = { title: '', url: '', sourceKind: 'web' };
 
@@ -73,6 +77,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init(): Promise<void> {
 	settings = await loadTaskClipperSettings();
+	catalogSettings = await loadCatalogSettings();
 	const initial = await getInitialPageContext();
 	pageContext = { title: initial.title, url: initial.url, sourceKind: initial.sourceKind };
 	mode = initial.mode || 'create';
@@ -126,7 +131,7 @@ function setMode(nextMode: PopupMode): void {
 	renderPreview();
 }
 
-function renderSelectors(): void {
+async function renderSelectors(): Promise<void> {
 	statusSelect.textContent = '';
 	for (const status of settings.statuses) {
 		const option = document.createElement('option');
@@ -141,7 +146,10 @@ function renderSelectors(): void {
 	empty.value = '';
 	empty.textContent = 'No project';
 	projectSelect.appendChild(empty);
-	for (const project of settings.projects) {
+	const liveProjects = await fetchTaskManagerProjects(catalogSettings).catch(() => []);
+	const projects = [...new Set([...settings.projects, ...liveProjects])]
+		.sort((left, right) => left.localeCompare(right));
+	for (const project of projects) {
 		const option = document.createElement('option');
 		option.value = project;
 		option.textContent = project;

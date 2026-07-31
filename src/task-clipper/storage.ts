@@ -19,7 +19,13 @@ export type TaskClipperSettings = {
 	openAiModel: string;
 };
 
+export type TaskCatalogSettings = {
+	catalogPort: number;
+	catalogToken: string;
+};
+
 const SETTINGS_KEY = 'fjgTaskClipperSettings';
+const CATALOG_SETTINGS_KEY = 'fjgTaskClipperCatalogSettings';
 const OPENAI_API_KEY = 'fjgTaskClipperOpenAiApiKey';
 
 export const DEFAULT_STATUSES: StatusOption[] = [
@@ -43,6 +49,11 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	taskManagerDefaultsVersion: 1,
 	silentOpen: true,
 	openAiModel: 'gpt-4.1-mini',
+};
+
+export const DEFAULT_CATALOG_SETTINGS: TaskCatalogSettings = {
+	catalogPort: 27124,
+	catalogToken: '',
 };
 
 export function cleanStatusId(value: string): string {
@@ -91,6 +102,17 @@ export async function loadTaskClipperSettings(): Promise<TaskClipperSettings> {
 export async function saveTaskClipperSettings(settings: TaskClipperSettings): Promise<TaskClipperSettings> {
 	const normalized = normalizeSettings(settings);
 	await browser.storage.sync.set({ [SETTINGS_KEY]: normalized });
+	return normalized;
+}
+
+export async function loadCatalogSettings(): Promise<TaskCatalogSettings> {
+	const result = await browser.storage.local.get(CATALOG_SETTINGS_KEY) as Record<string, Partial<TaskCatalogSettings> | undefined>;
+	return normalizeCatalogSettings(result[CATALOG_SETTINGS_KEY]);
+}
+
+export async function saveCatalogSettings(settings: TaskCatalogSettings): Promise<TaskCatalogSettings> {
+	const normalized = normalizeCatalogSettings(settings);
+	await browser.storage.local.set({ [CATALOG_SETTINGS_KEY]: normalized });
 	return normalized;
 }
 
@@ -154,6 +176,20 @@ function normalizeDestinationFile(value: string): string {
 		.replace(/\\/g, '/')
 		.replace(/^\/+/, '')
 		.replace(/\.md$/i, '');
+}
+
+function normalizeCatalogSettings(value: Partial<TaskCatalogSettings> | undefined): TaskCatalogSettings {
+	return {
+		catalogPort: normalizePort(value?.catalogPort),
+		catalogToken: String(value?.catalogToken || '').trim(),
+	};
+}
+
+function normalizePort(value: unknown): number {
+	const port = Number(value);
+	return Number.isInteger(port) && port >= 1024 && port <= 65535
+		? port
+		: DEFAULT_CATALOG_SETTINGS.catalogPort;
 }
 
 function normalizeOpenAiModel(value: string | undefined): string {

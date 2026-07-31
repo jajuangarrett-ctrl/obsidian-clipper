@@ -35,6 +35,18 @@
 
 			<section class="settings-section">
 				<h2>Projects</h2>
+				<p class="settings-help">The popup loads live project names from FJG Task Manager when the catalog connection is configured. Manual projects below are fallback options.</p>
+				<div class="settings-grid">
+					<label>
+						<span>Catalog port</span>
+						<input id="catalog-port" type="number" min="1024" max="65535" autocomplete="off">
+					</label>
+					<label>
+						<span>Pairing token</span>
+						<input id="catalog-token" type="password" autocomplete="off" placeholder="From FJG Task Manager settings">
+					</label>
+				</div>
+				<button id="test-catalog" class="secondary" type="button">Test catalog connection</button>
 				<form id="project-form" class="manage-form">
 					<input id="project-name" type="text" placeholder="Project name" autocomplete="off">
 					<button type="submit">Add project</button>

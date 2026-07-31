@@ -1,15 +1,20 @@
 import {
+	TaskCatalogSettings,
 	DEFAULT_STATUSES,
 	TaskClipperSettings,
 	cleanProjectName,
 	cleanStatusId,
+	loadCatalogSettings,
 	loadOpenAiApiKey,
 	loadTaskClipperSettings,
+	saveCatalogSettings,
 	saveOpenAiApiKey,
 	saveTaskClipperSettings,
 } from './storage';
+import { testTaskManagerCatalog } from './catalog-client';
 
 let settings: TaskClipperSettings;
+let catalogSettings: TaskCatalogSettings;
 
 const notice = document.getElementById('settings-notice') as HTMLElement;
 
@@ -17,6 +22,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init(): Promise<void> {
 	settings = await loadTaskClipperSettings();
+	catalogSettings = await loadCatalogSettings();
 	await populateForm();
 	bindEvents();
 }
@@ -25,6 +31,8 @@ async function populateForm(): Promise<void> {
 	(document.getElementById('vault-name') as HTMLInputElement).value = settings.vaultName;
 	(document.getElementById('destination-file') as HTMLInputElement).value = settings.destinationFile;
 	(document.getElementById('task-folder') as HTMLInputElement).value = settings.taskFolder;
+	(document.getElementById('catalog-port') as HTMLInputElement).value = String(catalogSettings.catalogPort);
+	(document.getElementById('catalog-token') as HTMLInputElement).value = catalogSettings.catalogToken;
 	(document.getElementById('openai-model') as HTMLInputElement).value = settings.openAiModel;
 	(document.getElementById('openai-api-key') as HTMLInputElement).value = await loadOpenAiApiKey();
 	renderProjects();
@@ -35,6 +43,7 @@ async function populateForm(): Promise<void> {
 function bindEvents(): void {
 	document.getElementById('save-settings')?.addEventListener('click', saveForm);
 	document.getElementById('project-form')?.addEventListener('submit', addProject);
+	document.getElementById('test-catalog')?.addEventListener('click', testCatalogConnection);
 	document.getElementById('tag-form')?.addEventListener('submit', addTag);
 	document.getElementById('status-form')?.addEventListener('submit', addStatus);
 	document.getElementById('reset-statuses')?.addEventListener('click', resetStatuses);
@@ -45,10 +54,32 @@ async function saveForm(): Promise<void> {
 	settings.destinationFile = (document.getElementById('destination-file') as HTMLInputElement).value;
 	settings.taskFolder = (document.getElementById('task-folder') as HTMLInputElement).value;
 	settings.openAiModel = (document.getElementById('openai-model') as HTMLInputElement).value;
+	catalogSettings.catalogPort = Number((document.getElementById('catalog-port') as HTMLInputElement).value);
+	catalogSettings.catalogToken = (document.getElementById('catalog-token') as HTMLInputElement).value;
 	settings = await saveTaskClipperSettings(settings);
+	catalogSettings = await saveCatalogSettings(catalogSettings);
 	await saveOpenAiApiKey((document.getElementById('openai-api-key') as HTMLInputElement).value);
 	await populateForm();
 	setNotice('Settings saved.');
+}
+
+async function testCatalogConnection(): Promise<void> {
+	const button = document.getElementById('test-catalog') as HTMLButtonElement;
+	button.disabled = true;
+	try {
+		const candidate = await saveCatalogSettings({
+			catalogPort: Number((document.getElementById('catalog-port') as HTMLInputElement).value),
+			catalogToken: (document.getElementById('catalog-token') as HTMLInputElement).value,
+		});
+		catalogSettings = candidate;
+		await testTaskManagerCatalog(candidate);
+		await populateForm();
+		setNotice('Connected to FJG Task Manager catalog.');
+	} catch (error) {
+		setNotice(error instanceof Error ? error.message : String(error), true);
+	} finally {
+		button.disabled = false;
+	}
 }
 
 async function addProject(event: Event): Promise<void> {

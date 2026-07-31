@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { DEFAULT_SETTINGS, normalizeSettings } from './storage';
+import {
+	DEFAULT_CATALOG_SETTINGS,
+	DEFAULT_SETTINGS,
+	loadCatalogSettings,
+	normalizeSettings,
+	saveCatalogSettings,
+} from './storage';
 
 describe('task clipper settings', () => {
 	test('uses the default vault name when no setting is stored', () => {
@@ -52,5 +58,20 @@ describe('task clipper settings', () => {
 			defaultStatus: 'Inbox',
 			taskManagerDefaultsVersion: 1,
 		}).defaultStatus).toBe('Inbox');
+	});
+});
+
+describe('task clipper catalog settings', () => {
+	test('stores catalog settings locally', async () => {
+		await saveCatalogSettings({ catalogPort: 27125, catalogToken: ' token ' });
+		await expect(loadCatalogSettings()).resolves.toEqual({
+			catalogPort: 27125,
+			catalogToken: 'token',
+		});
+	});
+
+	test('normalizes invalid catalog ports to the default', async () => {
+		await saveCatalogSettings({ catalogPort: 10, catalogToken: '' });
+		await expect(loadCatalogSettings()).resolves.toEqual(DEFAULT_CATALOG_SETTINGS);
 	});
 });
