@@ -89,7 +89,7 @@ async function init(): Promise<void> {
 	emailSubject.value = pageContext.sourceKind === 'email' ? cleanEmailSubject(pageContext.title) : '';
 	tagsField.value = 'task';
 
-	renderSelectors();
+	await renderSelectors();
 	bindEvents();
 	setMode(mode);
 	(mode === 'update' ? updateTaskQuery : taskTitle).focus();
