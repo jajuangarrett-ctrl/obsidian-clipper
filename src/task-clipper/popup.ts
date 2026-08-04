@@ -1,5 +1,10 @@
 import browser from '../utils/browser-polyfill';
-import { fetchTaskManagerProjects } from './catalog-client';
+import { requestAiTitle } from './ai-title';
+import {
+	CatalogTask,
+	fetchTaskManagerProjects,
+	searchTaskManagerTasks,
+} from './catalog-client';
 import {
 	ProjectSelectionDraft,
 	cleanEmailSubject,
@@ -26,6 +31,7 @@ const PENDING_CONTEXT_KEY = 'fjgTaskClipperPendingContext';
 const PROJECT_SELECTION_KEY = 'fjgTaskClipperProjectSelection';
 const PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const MAX_OBSIDIAN_URL_LENGTH = 60000;
+const TASK_SEARCH_DELAY_MS = 220;
 
 type PopupMode = 'create' | 'update';
 
@@ -47,6 +53,7 @@ type AppendUpdatePayload = {
 	version: 2;
 	action: 'append-update';
 	taskFolder: string;
+	taskId?: string;
 	taskQuery: string;
 	updateText: string;
 	source: PageContext;
@@ -59,6 +66,9 @@ let settings: TaskClipperSettings;
 let catalogSettings: TaskCatalogSettings;
 let mode: PopupMode = 'create';
 let pageContext: PageContext = { title: '', url: '', sourceKind: 'web' };
+let selectedUpdateTask: CatalogTask | null = null;
+let taskSearchTimer: number | null = null;
+let taskSearchAbort: AbortController | null = null;
 
 const createTab = document.getElementById('create-tab') as HTMLButtonElement;
 const updateTab = document.getElementById('update-tab') as HTMLButtonElement;
@@ -68,11 +78,13 @@ const taskTitle = document.getElementById('task-title') as HTMLInputElement;
 const generateTitleButton = document.getElementById('generate-title') as HTMLButtonElement;
 const taskDetails = document.getElementById('task-details') as HTMLTextAreaElement;
 const updateTaskQuery = document.getElementById('update-task-query') as HTMLInputElement;
+const updateTaskResults = document.getElementById('update-task-results') as HTMLElement;
 const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
 const statusSelect = document.getElementById('status-select') as HTMLSelectElement;
 const projectSelect = document.getElementById('project-select') as HTMLSelectElement;
 const tagsField = document.getElementById('tags-field') as HTMLInputElement;
 const tagOptions = document.getElementById('tag-options') as HTMLDataListElement;
+const includeSourceRow = document.getElementById('include-source-row') as HTMLLabelElement;
 const includeSource = document.getElementById('include-source') as HTMLInputElement;
 const emailSourceGroup = document.getElementById('email-source-group') as HTMLElement;
 const emailSubject = document.getElementById('email-subject') as HTMLInputElement;
@@ -115,6 +127,7 @@ function bindEvents(): void {
 	projectSelect.addEventListener('change', () => {
 		void rememberProjectSelection();
 	});
+	updateTaskQuery.addEventListener('input', scheduleTaskSearch);
 
 	for (const element of [
 		taskTitle,
@@ -141,6 +154,7 @@ function setMode(nextMode: PopupMode): void {
 	saveButton.textContent = mode === 'create' ? 'Create Task' : 'Add Update';
 	generateTitleButton.disabled = mode !== 'create';
 	renderPreview();
+	if (mode === 'update') updateTaskQuery.focus();
 }
 
 async function renderSelectors(): Promise<void> {
@@ -181,11 +195,14 @@ function renderPreview(): void {
 	renderSourceControls();
 
 	if (mode === 'update') {
-		const block = buildUpdateBlock(updateText.value, sourceContext());
+		const block = buildUpdateBlock(updateText.value, emptySourceContext());
 		preview.textContent = block || '(no update text yet)';
-		taskCount.textContent = updateTaskQuery.value.trim() ? '1 update' : 'Choose task';
+		const taskId = resolvedUpdateTaskId();
+		taskCount.textContent = taskId ? '1 update' : 'Choose task';
+		saveButton.disabled = !taskId || !updateText.value.trim();
 		return;
 	}
+	saveButton.disabled = false;
 
 	const content = getCreateTaskContent();
 	preview.textContent = content || '(no task text yet)';
@@ -200,7 +217,9 @@ function renderPreview(): void {
 }
 
 function renderSourceControls(): void {
-	const showEmailSubject = includeSource.checked && pageContext.sourceKind === 'email';
+	const isUpdate = mode === 'update';
+	includeSourceRow.classList.toggle('is-hidden', isUpdate);
+	const showEmailSubject = !isUpdate && includeSource.checked && pageContext.sourceKind === 'email';
 	emailSourceGroup.classList.toggle('is-hidden', !showEmailSubject);
 }
 
@@ -277,18 +296,105 @@ async function appendUpdate(): Promise<void> {
 	const text = updateText.value.trim();
 	if (!taskQuery) return setNotice('Enter the task title or filename to update.', true);
 	if (!text) return setNotice('Add update text first.', true);
+	const taskId = resolvedUpdateTaskId();
+	if (!taskId) return setNotice('Select the exact task from the search results first.', true);
 
 	const payload: AppendUpdatePayload = {
 		version: 2,
 		action: 'append-update',
 		taskFolder: settings.taskFolder,
+		taskId,
 		taskQuery,
 		updateText: text,
-		source: sourceContext(),
+		source: emptySourceContext(),
 		createdAt: new Date().toISOString(),
 	};
 
 	await sendPayload(payload, 'Update sent to Obsidian.');
+}
+
+function scheduleTaskSearch(): void {
+	selectedUpdateTask = null;
+	if (taskSearchTimer !== null) window.clearTimeout(taskSearchTimer);
+	taskSearchAbort?.abort();
+	const query = updateTaskQuery.value.trim();
+	if (!query) {
+		renderTaskSearchResults([], 'Type to search your Obsidian tasks.');
+		renderPreview();
+		return;
+	}
+	if (isStableTaskId(query)) {
+		renderTaskSearchResults([], 'Stable task ID entered.');
+		renderPreview();
+		return;
+	}
+	renderTaskSearchResults([], 'Searching Task Manager...');
+	renderPreview();
+	taskSearchTimer = window.setTimeout(() => {
+		void runTaskSearch(query);
+	}, TASK_SEARCH_DELAY_MS);
+}
+
+async function runTaskSearch(query: string): Promise<void> {
+	taskSearchAbort?.abort();
+	const abort = new AbortController();
+	taskSearchAbort = abort;
+	try {
+		const tasks = await searchTaskManagerTasks(catalogSettings, query, abort.signal);
+		if (updateTaskQuery.value.trim() !== query) return;
+		renderTaskSearchResults(tasks, 'No matching tasks.');
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'AbortError') return;
+		const message = error instanceof Error ? error.message : String(error);
+		renderTaskSearchResults([], message);
+		setNotice(message, true);
+	}
+}
+
+function renderTaskSearchResults(tasks: CatalogTask[], emptyMessage: string): void {
+	updateTaskResults.textContent = '';
+	if (!tasks.length) {
+		const empty = document.createElement('p');
+		empty.className = 'task-result-empty';
+		empty.textContent = emptyMessage;
+		updateTaskResults.appendChild(empty);
+		return;
+	}
+
+	for (const task of tasks) {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'task-result';
+		button.setAttribute('aria-pressed', String(selectedUpdateTask?.task_id === task.task_id));
+		const title = document.createElement('strong');
+		title.textContent = task.title;
+		const meta = document.createElement('span');
+		meta.textContent = [task.status, task.project, task.task_id].filter(Boolean).join(' • ');
+		button.append(title, meta);
+		button.addEventListener('click', () => {
+			selectedUpdateTask = task;
+			updateTaskQuery.value = task.title;
+			for (const item of Array.from(updateTaskResults.querySelectorAll('.task-result'))) {
+				item.classList.remove('is-selected');
+				item.setAttribute('aria-pressed', 'false');
+			}
+			button.classList.add('is-selected');
+			button.setAttribute('aria-pressed', 'true');
+			setNotice(`Task selected: ${task.title}`);
+			renderPreview();
+		});
+		updateTaskResults.appendChild(button);
+	}
+}
+
+function resolvedUpdateTaskId(): string {
+	if (selectedUpdateTask) return selectedUpdateTask.task_id;
+	const query = updateTaskQuery.value.trim();
+	return isStableTaskId(query) ? query : '';
+}
+
+function isStableTaskId(value: string): boolean {
+	return /^(?:tsk_[a-z0-9]+|FJG-[A-Z0-9]+)$/i.test(value.trim());
 }
 
 async function sendPayload(payload: ProtocolPayload, successMessage: string): Promise<void> {
@@ -338,79 +444,8 @@ function sourceContext(): PageContext {
 	return pageContext;
 }
 
-async function requestAiTitle(input: {
-	apiKey: string;
-	model: string;
-	taskText: string;
-	sourceTitle: string;
-	project: string;
-	status: string;
-}): Promise<string> {
-	const prompt = [
-		'Create one concise action-oriented task title.',
-		'Rules:',
-		'- 6 to 12 words when possible.',
-		'- Use sentence case.',
-		'- No trailing period.',
-		'- Do not include hashtags, status labels, or project prefixes.',
-		'- Preserve important names, programs, and dates.',
-		'- Return only the title text.',
-		'',
-		`Status: ${input.status || 'none'}`,
-		`Project: ${input.project || 'none'}`,
-		`Source title or email subject: ${input.sourceTitle || 'none'}`,
-		'Task text:',
-		input.taskText.slice(0, 4000),
-	].join('\n');
-
-	const response = await fetch('https://api.openai.com/v1/responses', {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${input.apiKey}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			model: input.model || 'gpt-4.1-mini',
-			input: prompt,
-			max_output_tokens: 40,
-		}),
-	});
-
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		const errorMessage = typeof data?.error?.message === 'string'
-			? data.error.message
-			: `OpenAI request failed with HTTP ${response.status}`;
-		throw new Error(errorMessage);
-	}
-
-	const title = cleanGeneratedTitle(extractResponseText(data));
-	if (!title) throw new Error('OpenAI returned an empty title.');
-	return title;
-}
-
-function extractResponseText(data: unknown): string {
-	const record = data as {
-		output_text?: string;
-		output?: Array<{ content?: Array<{ text?: string; type?: string }> }>;
-	};
-	if (typeof record.output_text === 'string') return record.output_text;
-	for (const item of record.output || []) {
-		for (const content of item.content || []) {
-			if (typeof content.text === 'string') return content.text;
-		}
-	}
-	return '';
-}
-
-function cleanGeneratedTitle(value: string): string {
-	return value
-		.replace(/^["'`]+|["'`]+$/g, '')
-		.replace(/^[-*]\s+/, '')
-		.replace(/\s+/g, ' ')
-		.trim()
-		.replace(/[.。]+$/g, '')
-		.slice(0, 120);
+function emptySourceContext(): PageContext {
+	return { title: '', url: '' };
 }
 
 function normalizeTags(value: string): string[] {

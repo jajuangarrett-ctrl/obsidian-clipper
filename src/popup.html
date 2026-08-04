@@ -56,7 +56,11 @@
 			<section id="update-panel" class="mode-panel is-hidden">
 				<section class="field-group">
 					<label for="update-task-query">Task to update</label>
-					<input id="update-task-query" type="text" placeholder="Type task title or note filename" autocomplete="off">
+					<input id="update-task-query" type="text" placeholder="Search Task Manager tasks" autocomplete="off">
+					<p class="field-help">Search and select the exact task before sending the update.</p>
+					<div id="update-task-results" class="task-search-results" aria-live="polite">
+						<p class="task-result-empty">Type to search your Obsidian tasks.</p>
+					</div>
 				</section>
 
 				<section class="field-group">
@@ -65,7 +69,7 @@
 				</section>
 			</section>
 
-			<label class="checkbox-row">
+			<label id="include-source-row" class="checkbox-row">
 				<input id="include-source" type="checkbox" checked>
 				<span>Include page source</span>
 			</label>

@@ -188,6 +188,47 @@ label,
 	font-size: 13px;
 }
 
+.field-help,
+.task-result-empty {
+	margin: 0;
+	color: var(--muted);
+	font-size: 12px;
+}
+
+.task-search-results {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 174px;
+	overflow-y: auto;
+}
+
+.task-result {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	width: 100%;
+	height: auto;
+	min-height: 44px;
+	padding: 8px 10px;
+	text-align: left;
+}
+
+.task-result.is-selected {
+	border-color: var(--accent);
+	background: var(--soft);
+}
+
+.task-result strong {
+	font-size: 13px;
+}
+
+.task-result span {
+	color: var(--muted);
+	font-size: 11px;
+}
+
 textarea,
 input,
 select {
