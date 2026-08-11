@@ -32,9 +32,11 @@ export const DEFAULT_STATUSES: StatusOption[] = [
 	{ id: 'Inbox', label: 'Inbox' },
 	{ id: 'DoFirst', label: 'Do First' },
 	{ id: 'DoSoon', label: 'Do Soon' },
+	{ id: 'Ongoing', label: 'Ongoing' },
 	{ id: 'Delegate', label: 'Delegate' },
 	{ id: 'Waiting', label: 'Waiting' },
 	{ id: 'On-Hold', label: 'On Hold' },
+	{ id: 'Completed', label: 'Completed' },
 ];
 
 export const DEFAULT_SETTINGS: TaskClipperSettings = {
@@ -132,25 +134,30 @@ export async function saveOpenAiApiKey(apiKey: string): Promise<void> {
 
 function normalizeStatuses(statuses: StatusOption[] | undefined): StatusOption[] {
 	const source = Array.isArray(statuses) && statuses.length ? statuses : DEFAULT_STATUSES;
-	const seen = new Set<string>();
-	const out: StatusOption[] = [];
+	const byId = new Map<string, StatusOption>();
+	const custom: StatusOption[] = [];
 
 	for (const item of source) {
 		const id = cleanStatusId(String(item?.id || item?.label || ''));
 		const label = String(item?.label || id).replace(/\s+/g, ' ').trim();
-		if (!id || seen.has(id)) continue;
-		seen.add(id);
-		out.push({ id, label: label || id });
+		if (!id || byId.has(id)) continue;
+		byId.set(id, { id, label: label || id });
 	}
 
+	const seen = new Set<string>();
+	const out: StatusOption[] = [];
 	for (const item of DEFAULT_STATUSES) {
-		if (!seen.has(item.id)) {
-			out.push(item);
-			seen.add(item.id);
-		}
+		const status = byId.get(item.id) || item;
+		out.push(status);
+		seen.add(item.id);
 	}
 
-	return out;
+	for (const item of byId.values()) {
+		if (seen.has(item.id)) continue;
+		custom.push(item);
+	}
+
+	return [...out, ...custom];
 }
 
 function normalizeProjects(projects: string[] | undefined): string[] {

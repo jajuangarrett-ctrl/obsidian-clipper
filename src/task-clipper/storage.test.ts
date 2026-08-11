@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
 	DEFAULT_CATALOG_SETTINGS,
+	DEFAULT_STATUSES,
 	DEFAULT_SETTINGS,
 	loadCatalogSettings,
 	normalizeSettings,
@@ -50,6 +51,41 @@ describe('task clipper settings', () => {
 	test('defaults new Task Manager clips to Do First', () => {
 		expect(DEFAULT_SETTINGS.defaultStatus).toBe('DoFirst');
 		expect(normalizeSettings(undefined).defaultStatus).toBe('DoFirst');
+	});
+
+	test('uses the full Task Manager status list in display order', () => {
+		expect(DEFAULT_STATUSES.map((status) => status.label)).toEqual([
+			'Inbox',
+			'Do First',
+			'Do Soon',
+			'Ongoing',
+			'Delegate',
+			'Waiting',
+			'On Hold',
+			'Completed',
+		]);
+	});
+
+	test('adds missing default statuses into their canonical order for older saved settings', () => {
+		expect(normalizeSettings({
+			statuses: [
+				{ id: 'Inbox', label: 'Inbox' },
+				{ id: 'DoFirst', label: 'Do First' },
+				{ id: 'DoSoon', label: 'Do Soon' },
+				{ id: 'Delegate', label: 'Delegate' },
+				{ id: 'Waiting', label: 'Waiting' },
+				{ id: 'On-Hold', label: 'On Hold' },
+			],
+		}).statuses.map((status) => status.label)).toEqual([
+			'Inbox',
+			'Do First',
+			'Do Soon',
+			'Ongoing',
+			'Delegate',
+			'Waiting',
+			'On Hold',
+			'Completed',
+		]);
 	});
 
 	test('migrates the old Inbox default to Do First once', () => {
