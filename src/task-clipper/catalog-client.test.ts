@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { searchTaskManagerTasks } from './catalog-client';
+import { searchTaskManagerTasks, fetchTaskManagerPeople } from './catalog-client';
 
 afterEach(() => {
 	vi.unstubAllGlobals();
@@ -52,4 +52,18 @@ describe('Task Manager catalog task search', () => {
 			'MIS',
 		)).rejects.toThrow('Invalid catalog token.');
 	});
+});
+
+describe('People catalog', () => {
+ test('normalizes names and does not request projects', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ok: true, json: async () => ({people: [' Alex  Rivera ', 'alex rivera', 'Sam Lee']})});
+  vi.stubGlobal('fetch', fetchMock);
+  expect(await fetchTaskManagerPeople({catalogPort:27124,catalogToken:'test'})).toEqual(['Alex Rivera','Sam Lee']);
+  expect(fetchMock.mock.calls[0][0]).toBe('http://127.0.0.1:27124/people');
+ });
+ test('explains missing pairing and unsupported plugins', async () => {
+  await expect(fetchTaskManagerPeople({catalogPort:27124,catalogToken:''})).rejects.toThrow('Settings');
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok:false,status:404}));
+  await expect(fetchTaskManagerPeople({catalogPort:27124,catalogToken:'test'})).rejects.toThrow('0.23.2');
+ });
 });

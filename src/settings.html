@@ -34,8 +34,8 @@
 			</section>
 
 			<section class="settings-section">
-				<h2>Projects</h2>
-				<p class="settings-help">The popup loads live project names from FJG Task Manager when the catalog connection is configured. Manual projects below are fallback options.</p>
+				<h2>People</h2>
+				<p class="settings-help">The popup loads People from FJG Objective Manager 0.23.2 or later. Add optional names here for use when the catalog is unavailable. Existing projects are not converted into people.</p>
 				<div class="settings-grid">
 					<label>
 						<span>Catalog port</span>
@@ -47,11 +47,11 @@
 					</label>
 				</div>
 				<button id="test-catalog" class="secondary" type="button">Test catalog connection</button>
-				<form id="project-form" class="manage-form">
-					<input id="project-name" type="text" placeholder="Project name" autocomplete="off">
-					<button type="submit">Add project</button>
+				<form id="person-form" class="manage-form">
+					<input id="person-name" type="text" placeholder="Person name" autocomplete="off">
+					<button type="submit">Add person</button>
 				</form>
-				<div id="project-list" class="manage-list"></div>
+				<div id="people-list" class="manage-list"></div>
 			</section>
 
 			<section class="settings-section">

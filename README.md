@@ -1,126 +1,19 @@
 # FJG Obsidian Task Clipper
 
-Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) for Franklin Garrett's FJG task workflow.
+Chrome extension forked from [Obsidian Web Clipper](https://github.com/obsidianmd/obsidian-clipper) for capturing objectives and updates in FJG Objective Manager.
 
-Version 2 does not use the TaskNotes HTTP API. The Chrome extension sends selected text through the FJG Task Manager Obsidian protocol URL, and FJG Task Manager creates or updates task workspaces directly in the vault.
+Version **0.2.0** replaces the Project dropdown with a searchable, collapsible **People** checklist. Select multiple names from the live Objective Manager catalog or manually saved People. New captures start unassigned. Existing projects and pairing settings are preserved.
 
-Detailed setup and use instructions live in [docs/FJG Obsidian Task Clipper User Guide.md](docs/FJG%20Obsidian%20Task%20Clipper%20User%20Guide.md).
+Requires **FJG Objective Manager 0.23.2 or later**, which preserves People in incoming protocol captures. Agenda inclusion remains opt-in in Objective Manager.
 
-## What It Does
+See the [user guide](docs/FJG%20Obsidian%20Task%20Clipper%20User%20Guide.md) for setup and use.
 
-- Captures selected Chrome text or the current page title.
-- Lets Franklin choose status, project, and tags in the extension popup.
-- Creates one FJG Task Manager workspace per task in `08 Tasks/Workspaces/`.
-- Stores each task as `task.md` with its update log in `updates.md`.
-- Adds selected Chrome text as an update in an existing task workspace's `updates.md`.
-- Uses clean task-title folder names, adding `(2)`, `(3)`, and so on only for duplicates.
-- Keeps every task compatible with Obsidian task plugins by including `#task`.
-- Uses status tags such as `#Inbox`, `#DoFirst`, and `#Waiting`.
-
-Default FJG statuses:
-
-- `Inbox`
-- `DoFirst`
-- `DoSoon`
-- `Delegate`
-- `Waiting`
-- `On-Hold`
-
-Example task workspace:
-
-```md
-# Review the budget packet
-
-- [ ] Review the budget packet PJ: Basic Needs #task #DoSoon
-
-## Source
-
-Source: [Budget page](https://example.com/budget)
-
-## Updates
-```
-
-## Architecture
-
-```text
-Chrome extension -> obsidian://fjg-task-clipper -> FJG Task Manager -> 08 Tasks/Workspaces/*/task.md
-```
-
-This avoids localhost, CORS, Chrome Local Network Access prompts, bearer tokens, and TaskNotes API behavior.
-
-## Chrome Setup
-
-```bash
+```sh
 npm install
-npm run build:chrome
-```
-
-Chrome output:
-
-```text
-dist/
-builds/fjg-obsidian-task-clipper-0.1.0-chrome.zip
-```
-
-Load or reload the unpacked extension:
-
-1. Open `chrome://extensions`.
-2. Turn on Developer mode.
-3. Click `Load unpacked`.
-4. Select this folder's `dist/` directory.
-5. Pin `FJG Obsidian Task Clipper`.
-
-## Obsidian Setup
-
-Install and enable `FJG Task Manager` in Obsidian. It owns the `obsidian://fjg-task-clipper` protocol and writes real Task Manager workspaces.
-
-Leave the older `FJG Task Clipper Bridge` disabled for the Task Manager workflow. It is only for direct TaskNotes-style note output.
-
-## Extension Settings
-
-Open the extension options page.
-
-Destination:
-
-- Vault name: blank to use the currently open Obsidian vault, or `FJG Vault` if explicit routing is needed.
-- Task index page: kept for compatibility; FJG Task Manager ignores it.
-- Task notes folder: kept for compatibility; FJG Task Manager ignores it.
-
-Projects:
-
-- Add project names in the extension settings.
-- They are stored in Chrome extension sync storage and appear in the popup project dropdown.
-
-Statuses:
-
-- The FJG defaults are already included.
-- The default status is `Do First` so new clipped tasks appear in the dashboard's opening view.
-- Add new statuses by entering a display label and tag value.
-- The tag value is what appears on the saved task line, for example `DoSoon` becomes `#DoSoon`.
-
-## Use
-
-1. Select text on a web page.
-2. Click the extension icon, or right-click and choose `Create Obsidian task from selection`.
-3. Edit the task text if needed.
-4. Choose status, project, and tags.
-5. Click `Create Task`.
-
-Add an update:
-
-1. Select update text on a web page.
-2. Right-click and choose `Add selection as task update`, or open the extension and choose `Add Update`.
-3. Type enough of the task title to identify one task.
-4. Click `Add Update`.
-
-If Chrome asks whether to open Obsidian, allow it. The extension uses an `obsidian://` URL to hand the task payload to FJG Task Manager.
-
-## Verification
-
-```bash
 npm test
 npm run build:chrome
-node --check obsidian-plugin/main.js
 ```
 
-The FJG Task Manager protocol handler can be smoke-tested with a protocol payload that creates a live task workspace.
+Load or reload `dist/` through `chrome://extensions`. The packaged release is `builds/fjg-obsidian-task-clipper-0.2.0-chrome.zip`.
+
+The extension sends capture payloads through `obsidian://fjg-task-clipper`. Objective Manager writes authoritative Markdown workspaces to its configured vault locations. The authenticated loopback catalog supplies People and exact objective search results. Keep the older Task Clipper Bridge disabled.

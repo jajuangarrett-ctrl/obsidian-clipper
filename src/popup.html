@@ -40,11 +40,16 @@
 						<label for="status-select">Status</label>
 						<select id="status-select"></select>
 					</section>
-					<section class="field-group">
-						<label for="project-select">Project</label>
-						<select id="project-select"></select>
-					</section>
+
 				</div>
+
+				<details class="people-picker">
+					<summary id="people-summary">People — Unassigned</summary>
+					<label for="people-search">Find a person</label>
+					<input id="people-search" type="search" placeholder="Search people" autocomplete="off">
+					<div id="people-list" class="people-list" role="group" aria-label="People"></div>
+					<p id="people-help" class="field-help" role="status"></p>
+				</details>
 
 				<section class="field-group">
 					<label for="tags-field">Tags</label>

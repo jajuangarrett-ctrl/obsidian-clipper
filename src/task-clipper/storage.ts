@@ -10,6 +10,7 @@ export type TaskClipperSettings = {
 	destinationFile: string;
 	taskFolder: string;
 	projects: string[];
+	people: string[];
 	tags: string[];
 	statuses: StatusOption[];
 	defaultStatus: string;
@@ -44,6 +45,7 @@ export const DEFAULT_SETTINGS: TaskClipperSettings = {
 	destinationFile: '08 Tasks/Tasks',
 	taskFolder: 'TaskNotes/Tasks',
 	projects: [],
+	people: [],
 	tags: ['task'],
 	statuses: DEFAULT_STATUSES,
 	defaultStatus: 'DoFirst',
@@ -86,6 +88,7 @@ export function normalizeSettings(raw: Partial<TaskClipperSettings> | undefined)
 		destinationFile: normalizeDestinationFile(merged.destinationFile),
 		taskFolder: normalizeDestinationFile(merged.taskFolder || DEFAULT_SETTINGS.taskFolder),
 		projects,
+		people: normalizePeople(merged.people),
 		tags,
 		statuses,
 		defaultStatus,
@@ -216,4 +219,15 @@ function defaultStatusForTaskManager(
 	const alreadyMigrated = Number(source.taskManagerDefaultsVersion || 0) >= DEFAULT_SETTINGS.taskManagerDefaultsVersion;
 	if (!alreadyMigrated && defaultStatus === 'Inbox') return DEFAULT_SETTINGS.defaultStatus;
 	return defaultStatus || DEFAULT_SETTINGS.defaultStatus;
+}
+
+export function normalizePeople(value: unknown): string[] {
+	if (!Array.isArray(value)) return [];
+	const names = new Map<string, string>();
+	for (const item of value) {
+		if (typeof item !== 'string') continue;
+		const name = item.replace(/\s+/g, ' ').trim();
+		if (name && !names.has(name.toLocaleLowerCase())) names.set(name.toLocaleLowerCase(), name);
+	}
+	return [...names.values()].sort((a, b) => a.localeCompare(b));
 }

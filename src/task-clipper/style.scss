@@ -411,3 +411,11 @@ pre {
 		flex-direction: column;
 	}
 }
+
+.people-picker { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--panel); }
+.people-picker summary { cursor: pointer; font-weight: 700; }
+.people-picker[open] summary { margin-bottom: 10px; }
+.people-picker > label { display: block; margin-bottom: 4px; }
+.people-list { max-height: 180px; overflow-y: auto; margin-top: 8px; }
+.people-list .checkbox-row { padding: 6px 2px; }
+.people-list [hidden] { display: none; }

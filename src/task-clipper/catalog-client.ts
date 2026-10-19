@@ -1,17 +1,18 @@
-import { TaskCatalogSettings } from './storage';
+import { TaskCatalogSettings, normalizePeople } from './storage';
 
-export async function fetchTaskManagerProjects(settings: TaskCatalogSettings): Promise<string[]> {
-	if (!settings.catalogToken) return [];
-	const response = await fetch(`http://127.0.0.1:${settings.catalogPort}/projects`, {
+export async function fetchTaskManagerPeople(settings: TaskCatalogSettings): Promise<string[]> {
+	if (!settings.catalogToken) throw new Error('Connect to Objective Manager in Settings to load People.');
+	const response = await fetch(`http://127.0.0.1:${settings.catalogPort}/people`, {
 		headers: { Authorization: `Bearer ${settings.catalogToken}` },
 		cache: 'no-store',
+		signal: AbortSignal.timeout(3000),
 	});
-	if (!response.ok) return [];
-	const body = await response.json() as { projects?: string[] };
-	return Array.isArray(body.projects)
-		? [...new Set(body.projects.map((project) => String(project || '').trim()).filter(Boolean))]
-			.sort((left, right) => left.localeCompare(right))
-		: [];
+	if (!response.ok) throw new Error(response.status === 404
+		? 'Update Objective Manager to 0.23.2 or later to load People.'
+		: 'People could not load. Check the catalog connection in Settings.');
+	const body = await response.json() as { people?: string[] };
+	if (!Array.isArray(body.people)) throw new Error('The catalog did not return a People list.');
+	return normalizePeople(body.people);
 }
 
 export type CatalogTask = {

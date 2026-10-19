@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"name": "FJG Obsidian Task Clipper",
 	"homepage_url": "https://github.com/jajuangarrett-ctrl/obsidian-clipper",
-	"version": "0.1.2",
+	"version": "0.2.0",
 	"description": "Create or update FJG Task Manager workspaces in Obsidian from selected Chrome text.",
 	"permissions": [
 		"activeTab",

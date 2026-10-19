@@ -2,7 +2,7 @@ import {
 	TaskCatalogSettings,
 	DEFAULT_STATUSES,
 	TaskClipperSettings,
-	cleanProjectName,
+	normalizePeople,
 	cleanStatusId,
 	loadCatalogSettings,
 	loadOpenAiApiKey,
@@ -35,14 +35,14 @@ async function populateForm(): Promise<void> {
 	(document.getElementById('catalog-token') as HTMLInputElement).value = catalogSettings.catalogToken;
 	(document.getElementById('openai-model') as HTMLInputElement).value = settings.openAiModel;
 	(document.getElementById('openai-api-key') as HTMLInputElement).value = await loadOpenAiApiKey();
-	renderProjects();
+	renderPeople();
 	renderTags();
 	renderStatuses();
 }
 
 function bindEvents(): void {
 	document.getElementById('save-settings')?.addEventListener('click', saveForm);
-	document.getElementById('project-form')?.addEventListener('submit', addProject);
+	document.getElementById('person-form')?.addEventListener('submit', addPerson);
 	document.getElementById('test-catalog')?.addEventListener('click', testCatalogConnection);
 	document.getElementById('tag-form')?.addEventListener('submit', addTag);
 	document.getElementById('status-form')?.addEventListener('submit', addStatus);
@@ -82,16 +82,16 @@ async function testCatalogConnection(): Promise<void> {
 	}
 }
 
-async function addProject(event: Event): Promise<void> {
+async function addPerson(event: Event): Promise<void> {
 	event.preventDefault();
-	const input = document.getElementById('project-name') as HTMLInputElement;
-	const project = cleanProjectName(input.value);
-	if (!project) return setNotice('Enter a project name.', true);
-	settings.projects = [...new Set([...settings.projects, project])].sort((a, b) => a.localeCompare(b));
+	const input = document.getElementById('person-name') as HTMLInputElement;
+	const person = normalizePeople([input.value])[0];
+	if (!person) return setNotice('Enter a person’s name.', true);
+	settings.people = normalizePeople([...settings.people, person]);
 	settings = await saveTaskClipperSettings(settings);
 	input.value = '';
-	renderProjects();
-	setNotice('Project added.');
+	renderPeople();
+	setNotice('Person added.');
 }
 
 async function addStatus(event: Event): Promise<void> {
@@ -131,28 +131,27 @@ async function resetStatuses(): Promise<void> {
 	setNotice('Default statuses restored.');
 }
 
-function renderProjects(): void {
-	const list = document.getElementById('project-list') as HTMLElement;
+function renderPeople(): void {
+	const list = document.getElementById('people-list') as HTMLElement;
 	list.textContent = '';
-	if (!settings.projects.length) {
-		list.textContent = 'No projects saved yet.';
+	if (!settings.people.length) {
+		list.textContent = 'No manual people saved yet.';
 		return;
 	}
 
-	for (const project of settings.projects) {
+	for (const person of settings.people) {
 		const item = document.createElement('div');
 		item.className = 'manage-item';
 		const label = document.createElement('span');
-		label.textContent = project;
+		label.textContent = person;
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.textContent = 'Delete';
 		button.addEventListener('click', async () => {
-			settings.projects = settings.projects.filter((itemProject) => itemProject !== project);
-			if (settings.defaultProject === project) settings.defaultProject = '';
+			settings.people = settings.people.filter((name) => name !== person);
 			settings = await saveTaskClipperSettings(settings);
-			renderProjects();
-			setNotice('Project deleted.');
+			renderPeople();
+			setNotice('Person removed.');
 		});
 		item.append(label, button);
 		list.appendChild(item);

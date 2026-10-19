@@ -2,15 +2,13 @@ import browser from '../utils/browser-polyfill';
 import { requestAiTitle } from './ai-title';
 import {
 	CatalogTask,
-	fetchTaskManagerProjects,
+	fetchTaskManagerPeople,
 	searchTaskManagerTasks,
 } from './catalog-client';
 import {
-	ProjectSelectionDraft,
 	cleanEmailSubject,
 	firstMeaningfulLine,
 	initialTaskTitle,
-	restorableProject,
 } from './capture';
 import {
 	PageContext,
@@ -25,10 +23,10 @@ import {
 	loadOpenAiApiKey,
 	loadTaskClipperSettings,
 	saveTaskClipperSettings,
+	normalizePeople,
 } from './storage';
 
 const PENDING_CONTEXT_KEY = 'fjgTaskClipperPendingContext';
-const PROJECT_SELECTION_KEY = 'fjgTaskClipperProjectSelection';
 const PENDING_MAX_AGE_MS = 5 * 60 * 1000;
 const MAX_OBSIDIAN_URL_LENGTH = 60000;
 const TASK_SEARCH_DELAY_MS = 220;
@@ -43,7 +41,7 @@ type CreateTaskPayload = {
 	title: string;
 	details: string;
 	status: string;
-	project: string;
+	people: string[];
 	tags: string[];
 	source: PageContext;
 	createdAt: string;
@@ -81,7 +79,8 @@ const updateTaskQuery = document.getElementById('update-task-query') as HTMLInpu
 const updateTaskResults = document.getElementById('update-task-results') as HTMLElement;
 const updateText = document.getElementById('update-text') as HTMLTextAreaElement;
 const statusSelect = document.getElementById('status-select') as HTMLSelectElement;
-const projectSelect = document.getElementById('project-select') as HTMLSelectElement;
+const peopleList = document.getElementById('people-list') as HTMLElement;
+const peopleSearch = document.getElementById('people-search') as HTMLInputElement;
 const tagsField = document.getElementById('tags-field') as HTMLInputElement;
 const tagOptions = document.getElementById('tag-options') as HTMLDataListElement;
 const includeSourceRow = document.getElementById('include-source-row') as HTMLLabelElement;
@@ -110,7 +109,6 @@ async function init(): Promise<void> {
 	tagsField.value = 'task';
 
 	await renderSelectors();
-	await restoreProjectSelection();
 	bindEvents();
 	setMode(mode);
 	(mode === 'update' ? updateTaskQuery : taskTitle).focus();
@@ -124,8 +122,11 @@ function bindEvents(): void {
 	updateTab.addEventListener('click', () => setMode('update'));
 	saveButton.addEventListener('click', submit);
 	generateTitleButton.addEventListener('click', generateTitle);
-	projectSelect.addEventListener('change', () => {
-		void rememberProjectSelection();
+	peopleList.addEventListener('change', renderPreview);
+	peopleSearch.addEventListener('input', () => {
+		for (const row of Array.from(peopleList.querySelectorAll<HTMLElement>('label'))) {
+			row.hidden = !row.textContent?.toLocaleLowerCase().includes(peopleSearch.value.toLocaleLowerCase().trim());
+		}
 	});
 	updateTaskQuery.addEventListener('input', scheduleTaskSearch);
 
@@ -135,7 +136,6 @@ function bindEvents(): void {
 		updateTaskQuery,
 		updateText,
 		statusSelect,
-		projectSelect,
 		tagsField,
 		includeSource,
 		emailSubject,
@@ -167,21 +167,28 @@ async function renderSelectors(): Promise<void> {
 	}
 	statusSelect.value = settings.defaultStatus;
 
-	projectSelect.textContent = '';
-	const empty = document.createElement('option');
-	empty.value = '';
-	empty.textContent = 'No project';
-	projectSelect.appendChild(empty);
-	const liveProjects = await fetchTaskManagerProjects(catalogSettings).catch(() => []);
-	const projects = [...new Set([...settings.projects, ...liveProjects])]
-		.sort((left, right) => left.localeCompare(right));
-	for (const project of projects) {
-		const option = document.createElement('option');
-		option.value = project;
-		option.textContent = project;
-		projectSelect.appendChild(option);
+	peopleList.textContent = '';
+	let livePeople: string[] = [];
+	const help = document.getElementById('people-help') as HTMLElement;
+	try {
+		livePeople = await fetchTaskManagerPeople(catalogSettings);
+		help.textContent = 'Choose one or more people, or leave unassigned.';
+	} catch (error) {
+		help.textContent = `${error instanceof Error ? error.message : String(error)} You can use names saved in Settings.`;
 	}
-	projectSelect.value = '';
+	const people = normalizePeople([...livePeople, ...settings.people]);
+	for (const person of people) {
+		const row = document.createElement('label');
+		row.className = 'checkbox-row';
+		const checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.value = person;
+		const label = document.createElement('span');
+		label.textContent = person;
+		row.append(checkbox, label);
+		peopleList.appendChild(row);
+	}
+	if (!people.length) peopleList.textContent = 'No people available. Add a person in Settings or Objective Manager.';
 
 	tagOptions.textContent = '';
 	for (const tag of settings.tags) {
@@ -192,6 +199,8 @@ async function renderSelectors(): Promise<void> {
 }
 
 function renderPreview(): void {
+	const people = selectedPeople();
+	(document.getElementById('people-summary') as HTMLElement).textContent = people.length ? `People (${people.length})` : 'People — Unassigned';
 	renderSourceControls();
 
 	if (mode === 'update') {
@@ -209,7 +218,7 @@ function renderPreview(): void {
 	const count = buildTaskLines(
 		taskDetails.value || taskTitle.value,
 		statusSelect.value,
-		projectSelect.value,
+		'',
 		settings.statuses,
 		normalizeTags(tagsField.value),
 	).length;
@@ -244,14 +253,13 @@ async function createTask(): Promise<void> {
 		title: title || 'Clipped task',
 		details,
 		status: statusSelect.value,
-		project: projectSelect.value,
+		people: selectedPeople(),
 		tags: normalizeTags(tagsField.value),
 		source: sourceContext(),
 		createdAt: new Date().toISOString(),
 	};
 
 	await sendPayload(payload, 'Task workspace sent to Obsidian.');
-	await clearProjectSelection();
 }
 
 async function generateTitle(): Promise<void> {
@@ -276,7 +284,7 @@ async function generateTitle(): Promise<void> {
 			model: settings.openAiModel,
 			taskText: sourceText,
 			sourceTitle: sourceContext().title,
-			project: projectSelect.value,
+			project: '',
 			status: statusSelect.value,
 		});
 		taskTitle.value = suggested;
@@ -422,14 +430,16 @@ async function sendPayload(payload: ProtocolPayload, successMessage: string): Pr
 }
 
 function getCreateTaskContent(): string {
-	return buildObsidianTaskContent(
+	const content = buildObsidianTaskContent(
 		taskDetails.value || taskTitle.value,
 		statusSelect.value,
-		projectSelect.value,
+		'',
 		settings.statuses,
 		normalizeTags(tagsField.value),
 		sourceContext(),
 	);
+	const people = selectedPeople();
+	return people.length ? `${content}\nPeople: ${people.join('; ')}` : content;
 }
 
 function sourceContext(): PageContext {
@@ -631,39 +641,8 @@ function isEmailUrl(url: string): boolean {
 	}
 }
 
-async function rememberProjectSelection(): Promise<void> {
-	const project = projectSelect.value;
-	if (!project || !pageContext.url) {
-		await clearProjectSelection();
-		return;
-	}
-	await browser.storage.local.set({
-		[PROJECT_SELECTION_KEY]: {
-			project,
-			url: pageContext.url,
-			savedAt: Date.now(),
-		} satisfies ProjectSelectionDraft,
-	});
-}
-
-async function restoreProjectSelection(): Promise<void> {
-	const result = await browser.storage.local.get(PROJECT_SELECTION_KEY) as Record<string, ProjectSelectionDraft | undefined>;
-	const project = restorableProject(
-		result[PROJECT_SELECTION_KEY],
-		pageContext.url,
-		Array.from(projectSelect.options).map((option) => option.value).filter(Boolean),
-		Date.now(),
-		PENDING_MAX_AGE_MS,
-	);
-	if (project) {
-		projectSelect.value = project;
-		return;
-	}
-	await clearProjectSelection();
-}
-
-async function clearProjectSelection(): Promise<void> {
-	await browser.storage.local.remove(PROJECT_SELECTION_KEY);
+function selectedPeople(): string[] {
+	return Array.from(peopleList.querySelectorAll<HTMLInputElement>('input:checked')).map(input => input.value);
 }
 
 function setNotice(message: string, isError = false): void {

@@ -111,3 +111,10 @@ describe('task clipper catalog settings', () => {
 		await expect(loadCatalogSettings()).resolves.toEqual(DEFAULT_CATALOG_SETTINGS);
 	});
 });
+
+test('keeps old projects separate from People and normalizes manual names', () => {
+ expect(normalizeSettings({projects:['Basic Needs'],defaultProject:'Basic Needs'}).people).toEqual([]);
+ const settings = normalizeSettings({projects:['Basic Needs'],people:[' Sam  Lee ','sam lee','Alex Rivera']});
+ expect(settings.people).toEqual(['Alex Rivera','Sam Lee']);
+ expect(settings.projects).toEqual(['Basic Needs']);
+});
